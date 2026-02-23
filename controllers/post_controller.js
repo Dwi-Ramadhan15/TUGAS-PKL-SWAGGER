@@ -1,44 +1,96 @@
-module.exports = {
-    '/posts': {
-        get: { tags: ['Kelola Postingan'], summary: 'Nampilin semua postingan', responses: { '200': { description: 'Berhasil' } } },
-        post: {
-            tags: ['Kelola Postingan'],
-            summary: 'Nambah postingan baru',
-            security: [{ bearerAuth: [] }],
-            requestBody: {
-                required: true,
-                content: {
-                    'multipart/form-data': {
-                        schema: {
-                            type: 'object',
-                            required: ['judul', 'isi', 'gambar'],
-                            properties: {
-                                judul: { type: 'string' },
-                                isi: { type: 'string' },
-                                gambar: { type: 'string', format: 'binary' }
-                            }
-                        }
-                    }
-                }
-            },
-            responses: { '201': { description: 'Berhasil dibuat' } }
-        }
-    },
-    '/posts/{id}': {
-        put: {
-            tags: ['Kelola Postingan'],
-            summary: 'Ngedit postingan',
-            security: [{ bearerAuth: [] }],
-            parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'integer' } }],
-            requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', properties: { judul: { type: 'string' }, isi: { type: 'string' } } } } } },
-            responses: { '200': { description: 'Berhasil diedit' } }
-        },
-        delete: {
-            tags: ['Kelola Postingan'],
-            summary: 'Ngapus postingan',
-            security: [{ bearerAuth: [] }],
-            parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'integer' } }],
-            responses: { '200': { description: 'Berhasil dihapus' } }
-        }
+const PostModel = require('../models/post');
+
+const getAll = async(req, res) => {
+    try {
+        const result = await PostModel.getAll();
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };
+
+const getById = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await PostModel.getById(id);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Datanya nggak ada bro' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const create = async(req, res) => {
+    try {
+        if (!req.body || !req.body.judul || !req.body.isi || !req.file) {
+            return res.status(400).json({
+                status: "error",
+                message: "Judul, isi, dan gambar wajib diisi"
+            });
+        }
+
+        const { judul, isi } = req.body;
+        const gambar = req.file.filename;
+        const result = await PostModel.create(judul, isi, gambar);
+
+        res.status(201).json({
+            status: "success",
+            message: "Post berhasil dibuat",
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const update = async(req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!req.body || !req.body.judul || !req.body.isi) {
+            return res.status(400).json({
+                status: "error",
+                message: "Judul dan isi tidak boleh kosong"
+            });
+        }
+
+        const { judul, isi } = req.body;
+        const gambar = req.file ? req.file.filename : null;
+        const result = await PostModel.update(id, judul, isi, gambar);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Datanya nggak ada bro' });
+        }
+
+        res.json({
+            status: "success",
+            message: "Post berhasil diedit",
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+const remove = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await PostModel.remove(id);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Datanya nggak ada bro' });
+        }
+
+        res.json({
+            message: 'Postingan berhasil dihapus ya',
+            data: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { getAll, getById, create, update, remove };
