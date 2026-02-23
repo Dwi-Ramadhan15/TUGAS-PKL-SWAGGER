@@ -5,7 +5,22 @@ module.exports = {
             tags: ['Kelola Postingan'],
             summary: 'Nambah postingan baru',
             security: [{ bearerAuth: [] }],
-            requestBody: { required: true, content: { 'multipart/form-data': { schema: { type: 'object', properties: { judul: { type: 'string' }, isi: { type: 'string' }, gambar: { type: 'string', format: 'binary' } } } } } },
+            requestBody: { 
+                required: true, 
+                content: { 
+                    'multipart/form-data': { 
+                        schema: { 
+                            type: 'object', 
+                            required: ['judul', 'isi', 'gambar'], 
+                            properties: { 
+                                judul: { type: 'string' }, 
+                                isi: { type: 'string' }, 
+                                gambar: { type: 'string', format: 'binary' } 
+                            } 
+                        } 
+                    } 
+                } 
+            },
             responses: { '201': { description: 'Berhasil dibuat' } }
         }
     },
