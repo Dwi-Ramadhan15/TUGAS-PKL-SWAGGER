@@ -13,11 +13,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.get('/posts', postController.getPosts);
-
-
-router.post('/posts', authenticateToken, upload.single('gambar'), postController.createPost);
-router.put('/posts/:id', authenticateToken, upload.single('gambar'), postController.updatePost);
-router.delete('/posts/:id', authenticateToken, postController.deletePost);
+router.get('/posts', postController.getAll);
+router.get('/posts/:id', postController.getById);
+router.post('/posts', authenticateToken, upload.single('gambar'), postController.create);
+router.put('/posts/:id', authenticateToken, upload.single('gambar'), postController.update);
+router.delete('/posts/:id', authenticateToken, postController.remove);
 
 module.exports = router;
