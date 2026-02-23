@@ -1,35 +1,40 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
+const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const cors = require('cors');
 
-const userRoute = require('./routes/user_route');
-const postRoute = require('./routes/post_route');
+const userRoutes = require('./routes/user_route');
 const swaggerDocument = require('./utils/swagger');
+const postRoutes = require('./routes/post_route');
+
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+const PORT = 3000;
 
-// Bikin folder uploads otomatis
-if (!fs.existsSync('./uploads')) {
-    fs.mkdirSync('./uploads');
+app.use(express.json());
+app.use(cors());
+
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
 }
+
+const storage = multer.diskStorage({
+    destination: 'uploads/',
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
 app.use('/uploads', express.static('uploads'));
 
-// Pasang Swagger
+app.use('/', userRoutes);
+app.use('/', postRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Pasang Router (Arahkan jalan)
-app.use('/', userRoute);
-app.use('/', postRoute);
-
-// Nyalain Server
-const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-    console.log('=========================================');
-    console.log(`Server MVC Berjalan di port ${PORT}!`);
-    console.log(`Buka: http://localhost:${PORT}/api-docs`);
-    console.log('=========================================');
+    console.log(`Server berjalan di: http://localhost:${PORT}`);
+    console.log(`Anda dapat mengakses Swagger: http://localhost:${PORT}/api-docs`);
 });
