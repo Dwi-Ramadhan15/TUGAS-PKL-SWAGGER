@@ -1,5 +1,5 @@
-const userSwagger = require('../routes/user_swagger');
-const postSwagger = require('../routes/post_swagger');
+const userSwagger = require('../routes/user_swegger');
+const postSwagger = require('../routes/post_swegger');
 
 module.exports = {
     openapi: '3.0.0',
