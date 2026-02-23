@@ -1,23 +1,25 @@
-const userSwagger = require('../routes/user_swegger');
-const postSwagger = require('../routes/post_swegger');
+const userSwagger = require('../routes/user_swagger');
+const postSwagger = require('../routes/post_swagger');
 
-const swaggerDocument = {
+module.exports = {
     openapi: '3.0.0',
     info: {
-        title: 'API Microdata (MVC Pattern)',
-        version: '1.0.0',
-        description: 'Struktur API rapi menggunakan arsitektur MVC',
+        title: 'API PKL',
+        version: '1.0.0'
     },
+    servers: [{ url: 'http://localhost:3000' }],
     components: {
         securitySchemes: {
-            bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
+            bearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT'
+            }
         }
     },
-    // Gabungkan paths user dan post di sini
+    security: [{ bearerAuth: [] }],
     paths: {
-        ...userSwagger,
+        ...userSwagger.paths,
         ...postSwagger
     }
 };
-
-module.exports = swaggerDocument;
