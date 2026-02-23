@@ -19,7 +19,7 @@ module.exports = {
     },
     security: [{ bearerAuth: [] }],
     paths: {
-        ...userSwagger.paths,
-        ...postSwagger
+        ...(userSwagger.paths ? userSwagger.paths : userSwagger),
+        ...(postSwagger.paths ? postSwagger.paths : postSwagger)
     }
 };
