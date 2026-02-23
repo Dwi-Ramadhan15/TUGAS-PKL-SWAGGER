@@ -21,7 +21,7 @@ const updatePost = async(req, res) => {
         const { id } = req.params;
         const { judul, isi } = req.body;
         const result = await PostModel.updatePost(id, judul, isi);
-        if (result.rows.length === 0) return res.status(404).json({ message: 'Datanya nggak ada bro' });
+        if (result.rows.length === 0) return res.status(404).json({ message: 'Datanya nggak ada tuh bre' });
         res.json(result.rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
@@ -30,7 +30,7 @@ const deletePost = async(req, res) => {
     try {
         const { id } = req.params;
         const result = await PostModel.deletePost(id);
-        if (result.rows.length === 0) return res.status(404).json({ message: 'Datanya nggak ada bro' });
+        if (result.rows.length === 0) return res.status(404).json({ message: 'Datanya nggak ada tuh bre' });
         res.json({ message: 'Postingan berhasil dihapus ya', data: result.rows[0] });
     } catch (err) { res.status(500).json({ error: err.message }); }
 };
