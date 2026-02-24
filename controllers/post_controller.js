@@ -2,7 +2,7 @@ const PostModel = require('../models/post');
 
 const getAll = async(req, res) => {
     try {
-        const result = await PostModel.getAll();
+        const result = await PostModel.getAllPosts();
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -12,7 +12,7 @@ const getAll = async(req, res) => {
 const getById = async(req, res) => {
     try {
         const { id } = req.params;
-        const result = await PostModel.getById(id);
+        const result = await PostModel.getPostById(id);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Datanya nggak ada bro' });
@@ -34,7 +34,7 @@ const create = async(req, res) => {
 
         const { judul, isi } = req.body;
         const gambar = req.file.filename;
-        const result = await PostModel.create(judul, isi, gambar);
+        const result = await PostModel.createPost(judul, isi, gambar);
 
         res.status(201).json({
             status: "success",
@@ -59,7 +59,7 @@ const update = async(req, res) => {
 
         const { judul, isi } = req.body;
         const gambar = req.file ? req.file.filename : null;
-        const result = await PostModel.update(id, judul, isi, gambar);
+        const result = await PostModel.updatePost(id, judul, isi, gambar);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Datanya nggak ada bro' });
@@ -78,7 +78,7 @@ const update = async(req, res) => {
 const remove = async(req, res) => {
     try {
         const { id } = req.params;
-        const result = await PostModel.remove(id);
+        const result = await PostModel.deletePost(id);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Datanya nggak ada bro' });

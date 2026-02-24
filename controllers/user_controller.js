@@ -23,8 +23,9 @@ const login = async(req, res) => {
         const isMatch = await argon2.verify(user.password, password);
         if (!isMatch) return res.status(401).json({ message: 'Passwordnya salah tuh!' });
 
-        const accessToken = jwt.sign({ userId: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '15m' });
-        const refreshToken = jwt.sign({ userId: user.id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+        // UBAH DUA BARIS INI:
+        const accessToken = jwt.sign({ userId: user.id, email: user.email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ userId: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
         await UserModel.updateRefreshToken(refreshToken, user.id);
         res.json({ message: 'Login Berhasil!', accessToken, refreshToken });

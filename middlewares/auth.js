@@ -7,7 +7,7 @@ const verifyToken = (req, res, next) => {
 
     if (!token) return res.status(401).json({ message: 'Akses Ditolak! Mana ID Card (Token) kamu?' });
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) return res.status(403).json({ message: 'Token Expired / Tidak Valid! Silakan Login ulang.' });
         req.user = user;
         next();
