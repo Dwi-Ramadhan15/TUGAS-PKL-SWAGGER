@@ -5,7 +5,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-
+const categoryRoutes = require('./routes/category_route');
 const userRoutes = require('./routes/user_route');
 const swaggerDocument = require('./utils/swagger');
 const postRoutes = require('./routes/post_route');
@@ -29,7 +29,7 @@ const storage = multer.diskStorage({
 });
 
 app.use('/images', express.static('public/images'));
-
+app.use('/', categoryRoutes);
 app.use('/', userRoutes);
 app.use('/', postRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

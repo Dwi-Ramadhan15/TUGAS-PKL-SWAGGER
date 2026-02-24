@@ -1,25 +1,32 @@
 const userSwagger = require('../routes/user_swagger');
 const postSwagger = require('../routes/post_swagger');
+const categorySwagger = require('../routes/category_swagger');
 
-module.exports = {
-    openapi: '3.0.0',
+const swaggerDocument = {
+    openapi: "3.0.0",
     info: {
-        title: 'API PKL',
-        version: '1.0.0'
+        title: "API Project PKL Swagger",
+        version: "1.0.0",
+        description: "Dokumentasi API untuk project PKL"
     },
-    servers: [{ url: 'http://localhost:3000' }],
+    servers: [{
+        url: "http://localhost:3000",
+        description: "Local Server"
+    }],
     components: {
         securitySchemes: {
             bearerAuth: {
-                type: 'http',
-                scheme: 'bearer',
-                bearerFormat: 'JWT'
+                type: "http",
+                scheme: "bearer",
+                bearerFormat: "JWT"
             }
         }
     },
-    security: [{ bearerAuth: [] }],
     paths: {
-        ...(userSwagger.paths ? userSwagger.paths : userSwagger),
-        ...(postSwagger.paths ? postSwagger.paths : postSwagger)
+        ...userSwagger,
+        ...categorySwagger,
+        ...postSwagger
     }
 };
+
+module.exports = swaggerDocument;

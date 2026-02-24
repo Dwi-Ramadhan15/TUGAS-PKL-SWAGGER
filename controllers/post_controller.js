@@ -25,16 +25,17 @@ const getById = async(req, res) => {
 
 const create = async(req, res) => {
     try {
-        if (!req.body || !req.body.judul || !req.body.isi || !req.file) {
+        // Pengecekan ditambah category_id
+        if (!req.body || !req.body.judul || !req.body.isi || !req.file || !req.body.category_id) {
             return res.status(400).json({
                 status: "error",
-                message: "Judul, isi, dan gambar wajib diisi"
+                message: "Judul, isi, gambar, dan kategori wajib diisi"
             });
         }
 
-        const { judul, isi } = req.body;
+        const { judul, isi, category_id } = req.body;
         const gambar = req.file.filename;
-        const result = await PostModel.createPost(judul, isi, gambar);
+        const result = await PostModel.createPost(judul, isi, gambar, category_id);
 
         res.status(201).json({
             status: "success",
@@ -50,16 +51,17 @@ const update = async(req, res) => {
     try {
         const { id } = req.params;
 
-        if (!req.body || !req.body.judul || !req.body.isi) {
+        // Pengecekan ditambah category_id
+        if (!req.body || !req.body.judul || !req.body.isi || !req.body.category_id) {
             return res.status(400).json({
                 status: "error",
-                message: "Judul dan isi tidak boleh kosong"
+                message: "Judul, isi, dan kategori tidak boleh kosong"
             });
         }
 
-        const { judul, isi } = req.body;
+        const { judul, isi, category_id } = req.body;
         const gambar = req.file ? req.file.filename : null;
-        const result = await PostModel.updatePost(id, judul, isi, gambar);
+        const result = await PostModel.updatePost(id, judul, isi, gambar, category_id);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Datanya nggak ada bro' });
