@@ -10,25 +10,24 @@ const userRoutes = require('./routes/user_route');
 const swaggerDocument = require('./utils/swagger');
 const postRoutes = require('./routes/post_route');
 
-
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 app.use(cors());
 
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
+const uploadDir = 'public/images';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
-    destination: 'uploads/',
+    destination: uploadDir,
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname);
     }
 });
 
-app.use('/uploads', express.static('uploads'));
 app.use('/images', express.static('public/images'));
 
 app.use('/', userRoutes);
