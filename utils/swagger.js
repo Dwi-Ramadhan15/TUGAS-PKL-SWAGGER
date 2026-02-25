@@ -7,7 +7,7 @@ const swaggerDocument = {
     info: {
         title: "API Project PKL Swagger",
         version: "1.0.0",
-        description: "Dokumentasi API untuk project PKL"
+        description: "Dokumentasi API untuk project PKL Exprees dengan Swagger"
     },
     servers: [{
         url: "http://localhost:3000",

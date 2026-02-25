@@ -4,7 +4,7 @@ const multer = require('multer');
 const postController = require('../controllers/post_controller');
 const authenticateToken = require('../middlewares/auth');
 
-const storage = multer.diskStorage({
+const storage = multer.memoryStorage({
     destination: 'public/images',
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname);

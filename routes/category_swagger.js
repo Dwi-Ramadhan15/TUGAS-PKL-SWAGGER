@@ -20,7 +20,7 @@ const categoryPaths = {
                             "properties": {
                                 "nama_kategori": {
                                     "type": "string",
-                                    "example": "Pengumuman Akademik"
+                                    "example": "Masukkan Ketegori Baru"
                                 }
                             }
                         }

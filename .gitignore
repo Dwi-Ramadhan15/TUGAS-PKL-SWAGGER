@@ -2,3 +2,6 @@ node_modules/
 .env
 uploads/
 public/images/
+
+minio.exe
+minio-data/

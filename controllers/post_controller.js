@@ -1,4 +1,6 @@
 const PostModel = require('../models/post');
+const sharp = require('sharp');
+const minioClient = require('../config/minio');
 
 const getAll = async(req, res) => {
     try {
@@ -25,7 +27,6 @@ const getById = async(req, res) => {
 
 const create = async(req, res) => {
     try {
-        // Pengecekan ditambah category_id
         if (!req.body || !req.body.judul || !req.body.isi || !req.file || !req.body.category_id) {
             return res.status(400).json({
                 status: "error",
@@ -34,12 +35,27 @@ const create = async(req, res) => {
         }
 
         const { judul, isi, category_id } = req.body;
-        const gambar = req.file.filename;
-        const result = await PostModel.createPost(judul, isi, gambar, category_id);
+        const file = req.file;
+
+        // Buat nama file yang unik dengan ekstensi .webp
+        const fileName = `post-${Date.now()}-${file.originalname.split('.')[0]}.webp`;
+
+        // Olah gambar menggunakan Sharp (Resize & ubah ke format WebP agar ringan)
+        const buffer = await sharp(file.buffer)
+            .resize({ width: 800 })
+            .webp({ quality: 80 })
+            .toBuffer();
+
+        // Upload gambar hasil kompresi ke MinIO 
+        const bucketName = 'pkl-project';
+        await minioClient.putObject(bucketName, fileName, buffer);
+
+        // Simpan nama file ke Database PostgreSQL
+        const result = await PostModel.createPost(judul, isi, fileName, category_id);
 
         res.status(201).json({
             status: "success",
-            message: "Post berhasil dibuat",
+            message: "Post berhasil dibuat dan gambar tersimpan di MinIO",
             data: result.rows[0]
         });
     } catch (err) {
@@ -51,7 +67,6 @@ const update = async(req, res) => {
     try {
         const { id } = req.params;
 
-        // Pengecekan ditambah category_id
         if (!req.body || !req.body.judul || !req.body.isi || !req.body.category_id) {
             return res.status(400).json({
                 status: "error",
@@ -60,7 +75,22 @@ const update = async(req, res) => {
         }
 
         const { judul, isi, category_id } = req.body;
-        const gambar = req.file ? req.file.filename : null;
+        let gambar = null;
+
+        // Jika user mengupload gambar baru saat update
+        if (req.file) {
+            const file = req.file;
+            gambar = `post-${Date.now()}-${file.originalname.split('.')[0]}.webp`;
+
+            const buffer = await sharp(file.buffer)
+                .resize({ width: 800 })
+                .webp({ quality: 80 })
+                .toBuffer();
+
+            const bucketName = 'pkl-project';
+            await minioClient.putObject(bucketName, gambar, buffer);
+        }
+
         const result = await PostModel.updatePost(id, judul, isi, gambar, category_id);
 
         if (result.rows.length === 0) {
