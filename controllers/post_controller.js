@@ -5,7 +5,17 @@ const minioClient = require('../config/minio');
 const getAll = async(req, res) => {
     try {
         const result = await PostModel.getAllPosts();
-        res.json(result.rows);
+
+        // jadi url 
+        const formattedData = result.rows.map(post => {
+            return {
+                ...post,
+                // process.env.MINIO_DOMAIN
+                gambar_url: post.gambar ? `${process.env.MINIO_DOMAIN}/${post.gambar}` : null
+            }
+        });
+
+        res.json(formattedData);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -19,7 +29,13 @@ const getById = async(req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Datanya nggak ada bro' });
         }
-        res.json(result.rows[0]);
+
+        const post = result.rows[0];
+        // membuat URL gambar nya dsni
+        // ini juga ikt di ubah
+        post.gambar_url = post.gambar ? `${process.env.MINIO_DOMAIN}/${post.gambar}` : null;
+
+        res.json(post);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -37,26 +53,33 @@ const create = async(req, res) => {
         const { judul, isi, category_id } = req.body;
         const file = req.file;
 
-        // Buat nama file yang unik dengan ekstensi .webp
+        // format jadi format webp
         const fileName = `post-${Date.now()}-${file.originalname.split('.')[0]}.webp`;
 
-        // Olah gambar menggunakan Sharp (Resize & ubah ke format WebP agar ringan)
+        // ukuean gambar 
         const buffer = await sharp(file.buffer)
             .resize({ width: 800 })
             .webp({ quality: 80 })
             .toBuffer();
 
-        // Upload gambar hasil kompresi ke MinIO 
+        // nama bucket nya pkl-project yow
         const bucketName = 'pkl-project';
         await minioClient.putObject(bucketName, fileName, buffer);
 
-        // Simpan nama file ke Database PostgreSQL
-        const result = await PostModel.createPost(judul, isi, fileName, category_id);
+        // ini bagian untuk gabung nama bucket dan file untuk di DB
+        const dbGambarPath = `${bucketName}/${fileName}`;
+
+        // Simpan dbGambarPath ke database, bukan fileName lagi
+        const result = await PostModel.createPost(judul, isi, dbGambarPath, category_id);
+
+        const newPost = result.rows[0];
+        // ganti juga pengalamatan domain nya jadi process.env.MINIO_DOMAIN
+        newPost.gambar_url = `${process.env.MINIO_DOMAIN}/${newPost.gambar}`;
 
         res.status(201).json({
             status: "success",
             message: "Post berhasil dibuat dan gambar tersimpan di MinIO",
-            data: result.rows[0]
+            data: newPost
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -77,18 +100,24 @@ const update = async(req, res) => {
         const { judul, isi, category_id } = req.body;
         let gambar = null;
 
-        // Jika user mengupload gambar baru saat update
+        // TDeklarasi nama bucket di luar if supaya rapi
+        const bucketName = 'pkl-project';
+
         if (req.file) {
             const file = req.file;
-            gambar = `post-${Date.now()}-${file.originalname.split('.')[0]}.webp`;
+            // Jadikan fileName sebagai variabel sementara untuk nama asli file
+            const fileName = `post-${Date.now()}-${file.originalname.split('.')[0]}.webp`;
 
             const buffer = await sharp(file.buffer)
                 .resize({ width: 800 })
                 .webp({ quality: 80 })
                 .toBuffer();
 
-            const bucketName = 'pkl-project';
-            await minioClient.putObject(bucketName, gambar, buffer);
+            // Upload pakai fileName
+            await minioClient.putObject(bucketName, fileName, buffer);
+
+            // Sesuai arahan pembimbing, variabel gambar diisi format 'bucket/file' untuk DB
+            gambar = `${bucketName}/${fileName}`;
         }
 
         const result = await PostModel.updatePost(id, judul, isi, gambar, category_id);
@@ -97,10 +126,14 @@ const update = async(req, res) => {
             return res.status(404).json({ message: 'Datanya nggak ada bro' });
         }
 
+        const updatedPost = result.rows[0];
+        // ganti juga pengalamatan domain nya jadi process.env.MINIO_DOMAIN
+        updatedPost.gambar_url = updatedPost.gambar ? `${process.env.MINIO_DOMAIN}/${updatedPost.gambar}` : null;
+
         res.json({
             status: "success",
             message: "Post berhasil diedit",
-            data: result.rows[0]
+            data: updatedPost
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
