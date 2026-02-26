@@ -39,7 +39,6 @@ const setupMinioBucket = async() => {
     }
 };
 
-// Panggil fungsinya saat file ini dimuat atau di ambil
-setupMinioBucket();
+
 
 module.exports = minioClient;

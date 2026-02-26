@@ -10,7 +10,6 @@ const getAll = async(req, res) => {
         const formattedData = result.rows.map(post => {
             return {
                 ...post,
-                // process.env.MINIO_DOMAIN
                 gambar_url: post.gambar ? `${process.env.MINIO_DOMAIN}/${post.gambar}` : null
             }
         });
@@ -32,7 +31,6 @@ const getById = async(req, res) => {
 
         const post = result.rows[0];
         // membuat URL gambar nya dsni
-        // ini juga ikt di ubah
         post.gambar_url = post.gambar ? `${process.env.MINIO_DOMAIN}/${post.gambar}` : null;
 
         res.json(post);
@@ -64,16 +62,20 @@ const create = async(req, res) => {
 
         // nama bucket nya pkl-project yow
         const bucketName = 'pkl-project';
-        await minioClient.putObject(bucketName, fileName, buffer);
 
-        // ini bagian untuk gabung nama bucket dan file untuk di DB
+        // Menambahkan metadata agar browser mengenali ini sebagai gambar, bukan file unduhan
+        const metaData = {
+            'Content-Type': 'image/webp',
+            'Content-Disposition': 'inline' // Kurang ini kak tadi makanya langsung ke download hehe
+        };
+        // Menambahkan buffer.length dan metaData ke parameter putObject
+        await minioClient.putObject(bucketName, fileName, buffer, buffer.length, metaData);
+
+        // Gabung nama bucket dan file untuk di DB
         const dbGambarPath = `${bucketName}/${fileName}`;
-
-        // Simpan dbGambarPath ke database, bukan fileName lagi
         const result = await PostModel.createPost(judul, isi, dbGambarPath, category_id);
 
         const newPost = result.rows[0];
-        // ganti juga pengalamatan domain nya jadi process.env.MINIO_DOMAIN
         newPost.gambar_url = `${process.env.MINIO_DOMAIN}/${newPost.gambar}`;
 
         res.status(201).json({
@@ -99,13 +101,10 @@ const update = async(req, res) => {
 
         const { judul, isi, category_id } = req.body;
         let gambar = null;
-
-        // TDeklarasi nama bucket di luar if supaya rapi
         const bucketName = 'pkl-project';
 
         if (req.file) {
             const file = req.file;
-            // Jadikan fileName sebagai variabel sementara untuk nama asli file
             const fileName = `post-${Date.now()}-${file.originalname.split('.')[0]}.webp`;
 
             const buffer = await sharp(file.buffer)
@@ -113,10 +112,11 @@ const update = async(req, res) => {
                 .webp({ quality: 80 })
                 .toBuffer();
 
-            // Upload pakai fileName
-            await minioClient.putObject(bucketName, fileName, buffer);
+            const metaData = {
+                'Content-Type': 'image/webp'
+            };
+            await minioClient.putObject(bucketName, fileName, buffer, buffer.length, metaData);
 
-            // Sesuai arahan pembimbing, variabel gambar diisi format 'bucket/file' untuk DB
             gambar = `${bucketName}/${fileName}`;
         }
 
@@ -127,7 +127,6 @@ const update = async(req, res) => {
         }
 
         const updatedPost = result.rows[0];
-        // ganti juga pengalamatan domain nya jadi process.env.MINIO_DOMAIN
         updatedPost.gambar_url = updatedPost.gambar ? `${process.env.MINIO_DOMAIN}/${updatedPost.gambar}` : null;
 
         res.json({
