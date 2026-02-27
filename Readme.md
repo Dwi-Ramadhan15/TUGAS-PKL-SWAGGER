@@ -13,6 +13,9 @@ Proyek Back-end menggunakan Node.js, Express, dan PostgreSQL.
         ```env
         MINIO_DOMAIN=[http://127.0.0.1:9000](http://127.0.0.1:9000)
     5. Jalankan server dengan `node index.js`.
+    6. Untuk jalankan frontend masuk ke folder frontend lalu ketikkan perintah npm run dev lalu klik enter
+    7. Untuk akses halaman admin ketik /login di url (http://localhost:5173/login)
+    8. Untuk akses halaman user klik url http://localhost:5173
 
 ## B. Fitur
 
@@ -30,3 +33,4 @@ Proyek Back-end menggunakan Node.js, Express, dan PostgreSQL.
     - Sharp (High-performance Node.js Image Processing)
     - Multer (Middleware handling multipart/form-data)
     - Swagger / OpenAPI (API Documentation)
+    - JSON Web Token (JWT) (Secure Authentication)

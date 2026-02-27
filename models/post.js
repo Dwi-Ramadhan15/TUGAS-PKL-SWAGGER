@@ -27,7 +27,13 @@ const createPost = async(judul, isi, gambar, category_id) => {
 
 const updatePost = async(id, judul, isi, gambar, category_id) => {
     return await pool.query(
-        'UPDATE posts SET judul = $1, isi = $2, gambar = $3, category_id = $4 WHERE id = $5 RETURNING *', [judul, isi, gambar, category_id, id]
+        `UPDATE posts 
+         SET judul = $2,
+             isi = $3,
+             gambar = $4,
+             category_id = $5
+         WHERE id = $1
+         RETURNING *`, [id, judul, isi, gambar, category_id]
     );
 };
 
