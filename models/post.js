@@ -1,6 +1,5 @@
 const pool = require('../config/db');
 
-// Gunakan JOIN agar saat GET POST, nama kategorinya ikut muncul
 const getAllPosts = async() => {
     return await pool.query(`
         SELECT posts.*, categories.nama_kategori 
@@ -19,26 +18,40 @@ const getPostById = async(id) => {
     `, [id]);
 };
 
-const createPost = async(judul, isi, gambar, category_id) => {
+// FUNGSI BARU: Cari berdasarkan slug
+const getPostBySlug = async(slug) => {
+    return await pool.query(`
+        SELECT posts.*, categories.nama_kategori 
+        FROM posts 
+        LEFT JOIN categories ON posts.category_id = categories.id 
+        WHERE posts.slug = $1
+    `, [slug]);
+};
+
+// Tambah parameter slug
+const createPost = async(judul, isi, gambar, category_id, slug) => {
     return await pool.query(
-        'INSERT INTO posts (judul, isi, gambar, category_id) VALUES ($1, $2, $3, $4) RETURNING *', [judul, isi, gambar, category_id]
+        'INSERT INTO posts (judul, isi, gambar, category_id, slug) VALUES ($1, $2, $3, $4, $5) RETURNING *', [judul, isi, gambar, category_id, slug]
     );
 };
 
-const updatePost = async(id, judul, isi, gambar, category_id) => {
-    return await pool.query(
-        `UPDATE posts 
-         SET judul = $2,
-             isi = $3,
-             gambar = $4,
-             category_id = $5
-         WHERE id = $1
-         RETURNING *`, [id, judul, isi, gambar, category_id]
-    );
+// Tambah parameter slug
+const updatePost = async(id, judul, isi, gambar, category_id, slug) => {
+    const query = `
+        UPDATE posts 
+        SET judul = $2, 
+            isi = $3, 
+            gambar = COALESCE(NULLIF($4, ''), gambar), 
+            category_id = $5,
+            slug = $6
+        WHERE id = $1 
+        RETURNING *`;
+    const values = [id, judul, isi, gambar, category_id, slug];
+    return await pool.query(query, values);
 };
 
 const deletePost = async(id) => {
     return await pool.query('DELETE FROM posts WHERE id = $1 RETURNING *', [id]);
 };
 
-module.exports = { getAllPosts, getPostById, createPost, updatePost, deletePost };
+module.exports = { getAllPosts, getPostById, getPostBySlug, createPost, updatePost, deletePost };

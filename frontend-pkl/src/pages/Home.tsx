@@ -1,29 +1,27 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../lib/axios'
-import { Calendar, Tag, ChevronRight, Search } from 'lucide-react'
+import { Calendar, ChevronRight, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 interface Post {
   id: number;
   judul: string;
   nama_kategori: string;
+  slug: string; 
   isi: string; 
   gambar_url: string; 
   create_at: string;
 }
 
 export default function Home() {
-  // STATE UNTUK SEARCH
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Ambil data postingan
   const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ['public-posts'],
     queryFn: async () => (await api.get('/posts')).data
   })
 
-  // LOGIKA FILTER PENCARIAN
   const filteredPosts = posts?.filter(post => 
     post.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.nama_kategori.toLowerCase().includes(searchTerm.toLowerCase())
@@ -31,23 +29,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Navbar Sederhana */}
       <nav className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-blue-600 tracking-tight">BERITA DIGITAL D'NEWS</h1>
+          <h1 className="text-xl font-bold text-orange-600 tracking-tight shadow-1"><a href="http://localhost:5173/">BERITA DIGITAL D'NEWS</a></h1>
           <div className="text-sm text-slate-500 font-medium">Informasi Berita Terupdate</div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <header className="bg-blue-600 pt-12 pb-20 px-4 text-white text-center">
-        <h2 className="text-3xl md:text-4xl font-extrabold mb-2">SELAMAT DATANG DI D'NEWS</h2>
+      <header className="bg-orange-600 pt-12 pb-20 px-4 text-white text-center">
+        <h2 className="text-3xl md:text-4xl font-extrabold mb-2"><marquee scrollamount="20">SELAMAT DATANG DI D'NEWS</marquee></h2>
         <p className="text-blue-100 max-w-2xl mx-auto">Temukan pengumuman, berita, dan pengetahuan ilmiah terbaru hanya disini.</p>
       </header>
         
       <main className="max-w-6xl mx-auto p-6 -mt-10">
-        
-        {/* INPUT PENCARIAN (SEARCH BAR) */}
         <div className="relative mb-10 max-w-2xl mx-auto">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-slate-400" />
@@ -55,13 +49,12 @@ export default function Home() {
           <input
             type="text"
             placeholder="Cari berita atau kategori..."
-            className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl shadow-lg border-none focus:ring-2 focus:ring-blue-500 outline-none text-slate-700 transition-all"
+            className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl shadow-lg border-none focus:ring-2 focus:ring-orange-500 outline-none text-slate-700 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* TAMPILAN GRID POSTINGAN */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -72,7 +65,6 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPosts?.map((post) => (
               <article key={post.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 group">
-                {/* Bagian Gambar */}
                 <div className="relative h-48 overflow-hidden">
                   <img 
                     src={post.gambar_url} 
@@ -80,13 +72,12 @@ export default function Home() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                    <span className="bg-orange-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
                       {post.nama_kategori}
                     </span>
                   </div>
                 </div>
 
-                {/* Bagian Konten */}
                 <div className="p-6">
                   <div className="flex items-center text-slate-400 text-xs mb-3 gap-3">
                     <span className="flex items-center gap-1">
@@ -104,7 +95,7 @@ export default function Home() {
                   </p>
 
                   <Link 
-                    to={`/post/${post.id}`} 
+                    to={`/post/${post.slug}`} 
                     className="flex items-center text-blue-600 text-sm font-bold group/btn">
                     Baca Selengkapnya 
                     <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />

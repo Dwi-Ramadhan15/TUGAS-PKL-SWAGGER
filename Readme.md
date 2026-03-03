@@ -24,6 +24,7 @@ Proyek Back-end menggunakan Node.js, Express, dan PostgreSQL.
     - Image Processing: Otomatis mengubah ukuran gambar (maks 800px) dan mengonversi format ke .webp menggunakan library Sharp untuk optimasi performa.
     - Object Storage: Upload gambar langsung diarahkan ke server MinIO (menggunakan Multer memoryStorage), menjadikan arsitektur server stateless dan hemat penyimpanan lokal.
     - API Documentation: Dokumentasi interaktif yang bisa langsung diuji coba menggunakan Swagger UI melalui endpoint /api-docs.
+    - Robust Image Update Logic
 
 ## C. Teknologi Yang digunakan
 
@@ -34,3 +35,4 @@ Proyek Back-end menggunakan Node.js, Express, dan PostgreSQL.
     - Multer (Middleware handling multipart/form-data)
     - Swagger / OpenAPI (API Documentation)
     - JSON Web Token (JWT) (Secure Authentication)
+    - Slugify (URL generation)

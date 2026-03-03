@@ -56,8 +56,8 @@ export default function Login() {
       <div className="w-full max-w-md bg-white/95 p-8 rounded-3xl shadow-2xl border border-white/20 z-10 mx-4">
         
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Portal Admin</h1>
-          <p className="text-slate-500 text-sm font-medium">Masuk untuk kelola D'NEWS Polinela</p>
+          <h1 className="text-3xl font-extrabold text-slate-800 mb-2">Login Admin</h1>
+          <p className="text-slate-500 text-sm font-medium">Masuk untuk kelola D'NEWS</p>
         </div>
 
         {errorMsg && (

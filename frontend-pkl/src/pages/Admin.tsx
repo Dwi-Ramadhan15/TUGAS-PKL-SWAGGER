@@ -172,6 +172,10 @@ export default function Admin() {
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold text-slate-800">Dashboard Admin 🛠️</h1>
           <div className="flex gap-3">
+
+            <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => navigate('/')}>
+              <LogOut className="w-4 h-4 mr-2" /> Lihat Beranda
+            </Button>
             
             <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => setIsCategoryDialogOpen(true)}>
               <Tags className="w-4 h-4 mr-2" /> Kelola Kategori
@@ -186,9 +190,18 @@ export default function Admin() {
                   <DialogTitle className="text-xl font-bold text-slate-800">Manajemen Kategori 🏷️</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleCategorySubmit} className="flex gap-2 mt-4">
-                  <input value={categoryName} onChange={(e) => setCategoryName(e.target.value)} className="flex-1 border p-2 rounded-lg" placeholder="Ketik nama kategori..." />
-                  <Button type="submit" disabled={categoryCreateMutation.isPending}>{editingCategoryId ? "Update" : "Simpan"}</Button>
-                </form>
+                <input 
+                  value={categoryName} 
+                  onChange={(e) => setCategoryName(e.target.value)} 
+                  className="flex-1 border p-2 rounded-lg outline-none focus:ring-2 focus:ring-green-500" 
+                  placeholder="Ketik nama kategori..."/>
+                <Button 
+                  type="submit" 
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  disabled={categoryCreateMutation.isPending}>
+                  {editingCategoryId ? "Update" : "Simpan"}
+                </Button>
+              </form>
                 <div className="mt-4 max-h-[300px] overflow-y-auto border rounded-lg">
                   <Table>
                     <TableBody>
@@ -196,7 +209,6 @@ export default function Admin() {
                         <TableRow key={cat.id}>
                           <TableCell className="font-medium">{cat.nama_kategori}</TableCell>
                           <TableCell className="text-right flex justify-end gap-2">
-                            {/* TOMBOL EDIT KATEGORI (BERWARNA BIRU) */}
                             <Button 
                               variant="outline" 
                               size="icon" 
@@ -205,7 +217,6 @@ export default function Admin() {
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            {/* TOMBOL HAPUS KATEGORI (BERWARNA MERAH) */}
                             <Button 
                               variant="outline" 
                               size="icon" 
@@ -299,7 +310,6 @@ export default function Admin() {
                           <Edit className="w-4 h-4" />
                         </Button>
                         
-                        {/* TOMBOL HAPUS POSTINGAN (BERWARNA MERAH) */}
                         <Button 
                           variant="outline" 
                           size="icon" 
