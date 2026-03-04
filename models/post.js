@@ -5,7 +5,7 @@ const getAllPosts = async() => {
         SELECT posts.*, categories.nama_kategori 
         FROM posts 
         LEFT JOIN categories ON posts.category_id = categories.id 
-        ORDER BY posts.id ASC
+        ORDER BY posts.id DESC
     `);
 };
 
@@ -18,7 +18,6 @@ const getPostById = async(id) => {
     `, [id]);
 };
 
-// FUNGSI BARU: Cari berdasarkan slug
 const getPostBySlug = async(slug) => {
     return await pool.query(`
         SELECT posts.*, categories.nama_kategori 
@@ -28,14 +27,12 @@ const getPostBySlug = async(slug) => {
     `, [slug]);
 };
 
-// Tambah parameter slug
 const createPost = async(judul, isi, gambar, category_id, slug) => {
     return await pool.query(
         'INSERT INTO posts (judul, isi, gambar, category_id, slug) VALUES ($1, $2, $3, $4, $5) RETURNING *', [judul, isi, gambar, category_id, slug]
     );
 };
 
-// Tambah parameter slug
 const updatePost = async(id, judul, isi, gambar, category_id, slug) => {
     const query = `
         UPDATE posts 

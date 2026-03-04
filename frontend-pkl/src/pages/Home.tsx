@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../lib/axios'
 import { Calendar, ChevronRight, Search } from 'lucide-react'
@@ -17,6 +17,10 @@ interface Post {
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
 
+  // 1. STATE UNTUK PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 6; // Menampilkan 6 berita per halaman
+
   const { data: posts, isLoading } = useQuery<Post[]>({
     queryKey: ['public-posts'],
     queryFn: async () => (await api.get('/posts')).data
@@ -26,6 +30,17 @@ export default function Home() {
     post.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.nama_kategori.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // 2. Trik UX: Reset ke halaman 1 jika user mencari berita
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // 3. LOGIKA PEMOTONGAN DATA (PAGINATION)
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = filteredPosts?.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil((filteredPosts?.length || 0) / postsPerPage);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -62,53 +77,79 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredPosts?.map((post) => (
-              <article key={post.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 group">
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={post.gambar_url} 
-                    alt={post.judul}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-orange-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                      {post.nama_kategori}
-                    </span>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* 4. MAPPING DATA MENGGUNAKAN currentPosts (Bukan filteredPosts lagi) */}
+              {currentPosts?.map((post) => (
+                <article key={post.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 group flex flex-col">
+                  <div className="relative h-48 overflow-hidden shrink-0">
+                    <img 
+                      src={post.gambar_url} 
+                      alt={post.judul}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-orange-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                        {post.nama_kategori}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="p-6">
-                  <div className="flex items-center text-slate-400 text-xs mb-3 gap-3">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {new Date(post.create_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
+                  <div className="p-6 flex flex-col flex-1">
+                    <div className="flex items-center text-slate-400 text-xs mb-3 gap-3">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(post.create_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+                    
+                    <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                      {post.judul}
+                    </h3>
+                    
+                    <p className="text-slate-500 text-sm line-clamp-3 mb-6 leading-relaxed flex-1">
+                      {post.isi}
+                    </p>
+
+                    <Link 
+                      to={`/post/${post.slug}`} 
+                      className="inline-flex items-center text-orange-600 text-sm font-bold group/btn mt-auto">
+                      Baca Selengkapnya 
+                      <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
                   </div>
-                  
-                  <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                    {post.judul}
-                  </h3>
-                  
-                  <p className="text-slate-500 text-sm line-clamp-3 mb-6 leading-relaxed">
-                    {post.isi}
-                  </p>
+                </article>
+              ))}
+            </div>
 
-                  <Link 
-                    to={`/post/${post.slug}`} 
-                    className="flex items-center text-blue-600 text-sm font-bold group/btn">
-                    Baca Selengkapnya 
-                    <ChevronRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
+            {/* 5. TOMBOL PAGINATION (Muncul jika halaman lebih dari 1) */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-4 mt-12">
+                <button 
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                  className="px-6 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:border-slate-200 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  Sebelumnya
+                </button>
+                <span className="text-sm font-bold text-slate-600 bg-white px-5 py-2.5 rounded-xl border-2 border-slate-200 shadow-sm">
+                  {currentPage} / {totalPages}
+                </span>
+                <button 
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  className="px-6 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:border-slate-200 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {filteredPosts?.length === 0 && !isLoading && (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm mt-4">
-            <p className="text-slate-500 text-lg">Maaf, pencarian untuk <span className="font-bold text-slate-700">"{searchTerm}"</span> tidak ditemukan. 📭</p>
+            <p className="text-slate-500 text-lg">Maaf, pencarian untuk <span className="font-bold text-orange-600">"{searchTerm}"</span> tidak ditemukan. 📭</p>
           </div>
         )}
       </main>
