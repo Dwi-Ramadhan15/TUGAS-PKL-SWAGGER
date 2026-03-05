@@ -17,30 +17,24 @@ interface Post {
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 1. STATE UNTUK PAGINATION
+  // pagination limit nya
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 6; // Menampilkan 6 berita per halaman
+  const postsPerPage = 3; 
 
-  const { data: posts, isLoading } = useQuery<Post[]>({
-    queryKey: ['public-posts'],
-    queryFn: async () => (await api.get('/posts')).data
+  // api sekarang udah menembak parameter pagination dan search, jadi kita tinggal pakai aja tanpa perlu filter manual lagi
+  const { data: response, isLoading } = useQuery({
+    queryKey: ['public-posts', currentPage, searchTerm],
+    queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}&search=${searchTerm}`)).data
   })
 
-  const filteredPosts = posts?.filter(post => 
-    post.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.nama_kategori.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // 2. Trik UX: Reset ke halaman 1 jika user mencari berita
+  // Reset ke halaman 1 jika user mencari berita
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // 3. LOGIKA PEMOTONGAN DATA (PAGINATION)
-  const indexOfLastPost = currentPage * postsPerPage;
-  const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = filteredPosts?.slice(indexOfFirstPost, indexOfLastPost);
-  const totalPages = Math.ceil((filteredPosts?.length || 0) / postsPerPage);
+  // AMBIL DATA DARI BACKEND (Tanpa perlu potong-potong/filter manual lagi)
+  const currentPosts = response?.data || [];
+  const totalPages = response?.pagination?.totalPages || 1;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -79,8 +73,7 @@ export default function Home() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* 4. MAPPING DATA MENGGUNAKAN currentPosts (Bukan filteredPosts lagi) */}
-              {currentPosts?.map((post) => (
+              {currentPosts?.map((post: Post) => (
                 <article key={post.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 group flex flex-col">
                   <div className="relative h-48 overflow-hidden shrink-0">
                     <img 
@@ -122,7 +115,7 @@ export default function Home() {
               ))}
             </div>
 
-            {/* 5. TOMBOL PAGINATION (Muncul jika halaman lebih dari 1) */}
+            {/* tombol pageination (Muncul jika halaman lebih dari 1) */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-4 mt-12">
                 <button 
@@ -147,7 +140,8 @@ export default function Home() {
           </>
         )}
 
-        {filteredPosts?.length === 0 && !isLoading && (
+        {/* Cek data kosong pakai currentPosts */}
+        {currentPosts?.length === 0 && !isLoading && (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm mt-4">
             <p className="text-slate-500 text-lg">Maaf, pencarian untuk <span className="font-bold text-orange-600">"{searchTerm}"</span> tidak ditemukan. 📭</p>
           </div>

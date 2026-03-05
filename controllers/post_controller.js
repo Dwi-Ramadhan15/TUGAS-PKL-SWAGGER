@@ -1,18 +1,40 @@
 const PostModel = require('../models/post');
 const sharp = require('sharp');
 const minioClient = require('../config/minio');
-const slugify = require('slugify'); // <-- Wajib ada
+const slugify = require('slugify');
 
 const getAll = async(req, res) => {
     try {
-        const result = await PostModel.getAllPosts();
-        const formattedData = result.rows.map(post => {
+        // Tangkap query dari frontend, kasih nilai bawaan (default) kalau kosong
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 3;
+        const search = req.query.search || '';
+
+        // Rumus sakti Offset: (Halaman - 1) * Limit
+        const offset = (page - 1) * limit;
+
+        const { rows, totalItems } = await PostModel.getAllPosts(limit, offset, search);
+
+        const formattedData = rows.map(post => {
             return {
                 ...post,
                 gambar_url: post.gambar ? `${process.env.MINIO_DOMAIN}/${post.gambar}` : null
             }
         });
-        res.json(formattedData);
+
+        // Hitung total halaman
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Format balasannya sekarang bentuk object, bukan array langsung
+        res.json({
+            data: formattedData,
+            pagination: {
+                totalItems,
+                totalPages,
+                currentPage: page,
+                limit
+            }
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

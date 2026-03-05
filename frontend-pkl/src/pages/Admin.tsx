@@ -60,9 +60,10 @@ export default function Admin() {
   }, [navigate])
 
   // --- GET DATA ---
-  const { data: posts, isLoading } = useQuery<Post[]>({
-    queryKey: ['posts'],
-    queryFn: async () => (await api.get('/posts')).data
+  // API SEKARANG MENEMBAK PARAMETER PAGE DAN LIMIT KE BACKEND
+  const { data: postsResponse, isLoading } = useQuery({
+    queryKey: ['posts', currentPage],
+    queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}`)).data
   })
 
   const { data: categories } = useQuery<Category[]>({
@@ -71,10 +72,10 @@ export default function Admin() {
   })
 
   // LOGIKA PAGINATION
-  const indexOfLastPost = currentPage * postsPerPage
-  const indexOfFirstPost = indexOfLastPost - postsPerPage
-  const currentPosts = posts?.slice(indexOfFirstPost, indexOfLastPost)
-  const totalPages = Math.ceil((posts?.length || 0) / postsPerPage)
+  // Karena backend yang motong data, kita tinggal ambil dari response backend
+  const currentPosts = postsResponse?.data || []
+  const totalPages = postsResponse?.pagination?.totalPages || 1
+  const indexOfFirstPost = (currentPage - 1) * postsPerPage // Hanya dipakai untuk nomor urut tabel
 
   //         MUTASI POSTINGAN 
   
@@ -306,7 +307,7 @@ export default function Admin() {
               </TableHeader>
               <TableBody>
                 {/* MAPPING DATA SEKARANG MENGGUNAKAN currentPosts */}
-                {currentPosts?.map((post, index) => (
+                {currentPosts?.map((post: Post, index: number) => (
                     <TableRow key={post.id} className="hover:bg-slate-50 transition-colors">
                       {/* Penomoran dinamis menyesuaikan halaman */}
                       <TableCell className="text-center font-medium text-slate-500">{indexOfFirstPost + index + 1}</TableCell>

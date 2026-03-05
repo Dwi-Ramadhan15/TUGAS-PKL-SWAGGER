@@ -1,12 +1,31 @@
 const pool = require('../config/db');
 
-const getAllPosts = async() => {
-    return await pool.query(`
+// buat atur pasang limit dan offset buat pagination, plus search
+const getAllPosts = async(limit, offset, search = '') => {
+    const searchParam = `%${search}%`;
+
+    // 1. Ambil datanya dibatasi limit 
+    const dataQuery = `
         SELECT posts.*, categories.nama_kategori 
         FROM posts 
         LEFT JOIN categories ON posts.category_id = categories.id 
+        WHERE posts.judul ILIKE $1 OR categories.nama_kategori ILIKE $1
         ORDER BY posts.id DESC
-    `);
+        LIMIT $2 OFFSET $3
+    `;
+    const { rows } = await pool.query(dataQuery, [searchParam, limit, offset]);
+
+    // 2. Hitung total KESELURUHAN data untuk bikin angka pagination
+    const countQuery = `
+        SELECT COUNT(*) 
+        FROM posts 
+        LEFT JOIN categories ON posts.category_id = categories.id 
+        WHERE posts.judul ILIKE $1 OR categories.nama_kategori ILIKE $1
+    `;
+    const { rows: countRows } = await pool.query(countQuery, [searchParam]);
+    const totalItems = parseInt(countRows[0].count, 10);
+
+    return { rows, totalItems };
 };
 
 const getPostById = async(id) => {

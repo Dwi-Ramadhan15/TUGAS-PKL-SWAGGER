@@ -2,7 +2,29 @@ const postPaths = {
     "/posts": {
         "get": {
             "tags": ["Kelola Postingan"],
-            "summary": "Melihat semua postingan",
+            "summary": "Pagination buat atur limit",
+            "parameters": [{
+                    "name": "page",
+                    "in": "query",
+                    "required": false,
+                    "schema": { "type": "integer", "default": 1 },
+                    "description": "halaman yang mau dibuka)"
+                },
+                {
+                    "name": "limit",
+                    "in": "query",
+                    "required": false,
+                    "schema": { "type": "integer", "default": 6 },
+                    "description": "Batas jumlah data yang ditampilkan per halaman"
+                },
+                {
+                    "name": "search",
+                    "in": "query",
+                    "required": false,
+                    "schema": { "type": "string" },
+                    "description": "Kata kunci pencarian judul atau kategori"
+                }
+            ],
             "responses": {
                 "200": { "description": "Berhasil mengambil data" },
                 "500": { "description": "Internal Server Error" }
@@ -32,6 +54,25 @@ const postPaths = {
             "responses": {
                 "201": { "description": "Postingan berhasil dibuat" },
                 "400": { "description": "Data tidak lengkap" },
+                "500": { "description": "Internal Server Error" }
+            }
+        }
+    },
+    // INI ENDPOINT BARU UNTUK FITUR SLUG
+    "/posts/slug/{slug}": {
+        "get": {
+            "tags": ["Kelola Postingan"],
+            "summary": "Melihat detail postingan berdasarkan Slug (URL Judul)",
+            "parameters": [{
+                "name": "slug",
+                "in": "path",
+                "required": true,
+                "schema": { "type": "string" },
+                "description": "Slug/URL dari postingan (Contoh: juara-1-lomba)"
+            }],
+            "responses": {
+                "200": { "description": "Data ditemukan" },
+                "404": { "description": "Data tidak ditemukan" },
                 "500": { "description": "Internal Server Error" }
             }
         }
