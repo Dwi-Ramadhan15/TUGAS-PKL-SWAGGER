@@ -5,7 +5,7 @@ const categorySwagger = require('../routes/category_swagger');
 const swaggerDocument = {
     openapi: "3.0.0",
     info: {
-        title: "API Project PKL Swagger",
+        title: "API Project PKL Swagger (BLOG D'NEWS)",
         version: "1.0.0",
         description: "Dokumentasi API untuk project PKL Exprees dengan Swagger"
     },

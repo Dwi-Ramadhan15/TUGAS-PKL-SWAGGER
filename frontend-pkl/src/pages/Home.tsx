@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom' // Tambahkan useNavigate
 import api from '../lib/axios'
-import { Calendar, ChevronRight, Search } from 'lucide-react'
+import { Calendar, ChevronRight, Search, LogOut, LogIn, User, Star } from 'lucide-react' // Tambahkan ikon Star
 import { Link } from 'react-router-dom'
 
 interface Post {
@@ -12,14 +13,30 @@ interface Post {
   isi: string; 
   gambar_url: string; 
   create_at: string;
+  avg_rating?: string | number; // Tambahan untuk menampung rata-rata rating
 }
 
 export default function Home() {
+  const navigate = useNavigate() // Inisialisasi navigate
   const [searchTerm, setSearchTerm] = useState("");
 
   // pagination limit nya
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 3; 
+  const postsPerPage = 6; 
+
+  // Cek status login
+  const token = localStorage.getItem('token');
+  const isLoggedIn = !!token;
+
+  // Fungsi Logout
+  const handleLogout = () => {
+    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
+      window.location.reload(); // Refresh halaman agar state bersih
+    }
+  };
 
   // api sekarang udah menembak parameter pagination dan search, jadi kita tinggal pakai aja tanpa perlu filter manual lagi
   const { data: response, isLoading } = useQuery({
@@ -41,7 +58,27 @@ export default function Home() {
       <nav className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold text-orange-600 tracking-tight shadow-1"><a href="http://localhost:5173/">BERITA DIGITAL D'NEWS</a></h1>
-          <div className="text-sm text-slate-500 font-medium">Informasi Berita Terupdate</div>
+          
+          {/* TOMBOL LOGIN / LOGOUT DINAMIS */}
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block text-sm text-slate-500 font-medium">Informasi Berita Terupdate</div>
+            
+            {isLoggedIn ? (
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-sm font-bold border border-red-100 hover:bg-red-600 hover:text-white transition-all shadow-sm"
+              >
+                <LogOut className="w-4 h-4" /> Logout
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="flex items-center gap-2 bg-orange-50 text-orange-600 px-4 py-1.5 rounded-full text-sm font-bold border border-orange-100 hover:bg-orange-600 hover:text-white transition-all shadow-sm"
+              >
+                <LogIn className="w-4 h-4" /> Login
+              </button>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -81,9 +118,13 @@ export default function Home() {
                       alt={post.judul}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
-                    <div className="absolute top-4 left-4">
+                    <div className="absolute top-4 left-4 flex gap-2">
                       <span className="bg-orange-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
                         {post.nama_kategori}
+                      </span>
+                      <span className="bg-white text-yellow-600 text-[10px] font-bold px-3 py-1 rounded-full flex items-center shadow-lg">
+                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                        {Number(post.avg_rating) > 0 ? Number(post.avg_rating).toFixed(1) : "New"}
                       </span>
                     </div>
                   </div>

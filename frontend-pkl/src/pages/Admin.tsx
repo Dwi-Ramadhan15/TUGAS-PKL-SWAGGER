@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { LogOut, Plus, Edit, Trash2, Tags } from 'lucide-react'
+import { LogOut, Plus, Edit, Trash2, Tags, MessageSquare } from 'lucide-react'
 import api from '../lib/axios'
 
 import { Button } from "@/components/ui/button"
@@ -20,11 +20,20 @@ interface Post {
   isi: string; 
   gambar_url: string; 
   create_at: string;
+  comment_count?: number; 
 }
 
 interface Category {
   id: number;
   nama_kategori: string; 
+}
+
+// Tambahan cetakan data untuk Komentar
+interface Comment {
+  id: number;
+  nama: string;
+  komentar: string;
+  created_at: string;
 }
 
 const postSchema = z.object({
@@ -50,6 +59,10 @@ export default function Admin() {
   const [currentPage, setCurrentPage] = useState(1)
   const postsPerPage = 7
 
+  // --- STATE UNTUK FITUR KOMENTAR ---
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false)
+  const [selectedPostForComment, setSelectedPostForComment] = useState<{id: number, judul: string} | null>(null)
+
   const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<PostForm>({
     resolver: zodResolver(postSchema)
   })
@@ -60,22 +73,32 @@ export default function Admin() {
   }, [navigate])
 
   // --- GET DATA ---
-  // API SEKARANG MENEMBAK PARAMETER PAGE DAN LIMIT KE BACKEND
   const { data: postsResponse, isLoading } = useQuery({
-    queryKey: ['posts', currentPage],
-    queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}`)).data
-  })
+  queryKey: ['posts', currentPage],
+  queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}`)).data,
+  refetchInterval: 3000, 
+  refetchOnWindowFocus: true 
+})
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: async () => (await api.get('/categories')).data
   })
 
-  // LOGIKA PAGINATION
-  // Karena backend yang motong data, kita tinggal ambil dari response backend
+  // GET DATA KOMENTAR 
+  const { data: comments, isLoading: isLoadingComments } = useQuery<Comment[]>({
+    queryKey: ['admin-comments', selectedPostForComment?.id],
+    queryFn: async () => {
+      // PERHATIKAN INI: ADA TAMBAHAN ?source=admin
+      const res = await api.get(`/posts/${selectedPostForComment?.id}/comments?source=admin`)
+      return res.data.data 
+    },
+    enabled: !!selectedPostForComment?.id 
+  })
+
   const currentPosts = postsResponse?.data || []
   const totalPages = postsResponse?.pagination?.totalPages || 1
-  const indexOfFirstPost = (currentPage - 1) * postsPerPage // Hanya dipakai untuk nomor urut tabel
+  const indexOfFirstPost = (currentPage - 1) * postsPerPage 
 
   //         MUTASI POSTINGAN 
   
@@ -105,11 +128,21 @@ export default function Admin() {
       queryClient.invalidateQueries({ queryKey: ['posts'] })
       alert("Postingan dihapus! 🗑️")
       
-      // Mencegah error halaman kosong saat data terakhir di sebuah halaman dihapus
       if (currentPosts?.length === 1 && currentPage > 1) {
         setCurrentPage(prev => prev - 1)
       }
     }
+  })
+
+  // MUTASI HAPUS KOMENTAR
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => await api.delete(`/comments/${commentId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-comments', selectedPostForComment?.id] })
+      queryClient.invalidateQueries({ queryKey: ['posts'] }) 
+      alert("Komentar berhasil dihapus! 🧹")
+    },
+    onError: (error: any) => alert(`Gagal hapus komentar: ${error.response?.data?.message || "Error"} ❌`)
   })
 
   const onSubmitPost = (data: PostForm) => {
@@ -170,7 +203,6 @@ export default function Admin() {
     else categoryCreateMutation.mutate(categoryName)
   }
 
-  // Fungsi tambahan untuk memanggil delete mutation agar tombol hapus postingan berjalan lancar
   const handleDeletePost = (id: number, judul: string) => {
     if (window.confirm(`Yakin mau menghapus postingan "${judul}"?`)) {
       deleteMutation.mutate(id)
@@ -256,13 +288,11 @@ export default function Admin() {
                   <DialogTitle className="text-xl font-bold text-slate-800">{editingPostId ? "Edit Postingan ✏️" : "Buat Postingan Baru"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmitPost)} className="space-y-4 mt-4">
-                  {/* INPUT JUDUL DENGAN VALIDASI MESSAGE */}
                   <div>
                     <input {...register("judul")} className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Judul" />
                     {errors.judul && <p className="text-red-500 text-xs mt-1.5 font-bold">{errors.judul.message}</p>}
                   </div>
                   
-                  {/* SELECT KATEGORI DENGAN VALIDASI MESSAGE */}
                   <div>
                     <select {...register("nama_kategori")} className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                       <option value="">-- Pilih Kategori --</option>
@@ -271,7 +301,6 @@ export default function Admin() {
                     {errors.nama_kategori && <p className="text-red-500 text-xs mt-1.5 font-bold">{errors.nama_kategori.message}</p>}
                   </div>
                   
-                  {/* TEXTAREA ISI DENGAN VALIDASI MESSAGE */}
                   <div>
                     <textarea {...register("isi")} rows={4} className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Isi Konten" />
                     {errors.isi && <p className="text-red-500 text-xs mt-1.5 font-bold">{errors.isi.message}</p>}
@@ -306,10 +335,8 @@ export default function Admin() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* MAPPING DATA SEKARANG MENGGUNAKAN currentPosts */}
                 {currentPosts?.map((post: Post, index: number) => (
                     <TableRow key={post.id} className="hover:bg-slate-50 transition-colors">
-                      {/* Penomoran dinamis menyesuaikan halaman */}
                       <TableCell className="text-center font-medium text-slate-500">{indexOfFirstPost + index + 1}</TableCell>
                       <TableCell>
                         {post.gambar_url ? (
@@ -323,7 +350,29 @@ export default function Admin() {
                       <TableCell><span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider">{post.nama_kategori}</span></TableCell>
                       <TableCell>
                         <div className="flex justify-center gap-2">
-                          {/* TOMBOL EDIT POSTINGAN (BERWARNA BIRU) */}
+                          
+                          {/* TOMBOL KELOLA KOMENTAR DENGAN NOTIFIKASI JUMLAH */}
+                          <div className="relative">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              title="Kelola Komentar"
+                              className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                              onClick={() => {
+                                // PERHATIKAN INI: FUNGSI ONCLICK DIUBAH!
+                                navigate(`/admin/comments/${post.id}`);
+                                setTimeout(() => queryClient.invalidateQueries({ queryKey: ['posts'] }), 500);
+                              }} 
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </Button>
+                            {post.comment_count !== undefined && Number(post.comment_count) > 0 && (
+                              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm animate-bounce">
+                                {post.comment_count}
+                              </span>
+                            )}
+                          </div>
+
                           <Button 
                             variant="outline" 
                             size="icon" 
@@ -358,7 +407,6 @@ export default function Admin() {
             </Table>
           </div>
 
-          {/* KONTROL PAGINATION */}
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 bg-slate-50 border-t">
               <Button 

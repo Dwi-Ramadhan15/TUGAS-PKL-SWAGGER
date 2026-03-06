@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const postController = require('../controllers/post_controller');
 const authenticateToken = require('../middlewares/auth');
+const verifyToken = require('../middlewares/auth');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -43,5 +44,10 @@ router.get('/posts/:id', postController.getById);
 router.post('/posts', authenticateToken, upload.single('gambar'), postController.create);
 router.put('/posts/:id', authenticateToken, upload.single('gambar'), postController.update);
 router.delete('/posts/:id', authenticateToken, postController.remove);
+// untuk Komentar
+router.get('/posts/:id/comments', postController.getPostComments);
+router.post('/posts/:id/comments', verifyToken, postController.createPostComment);
+//admmin bisa hapus komentar netizen 
+router.delete('/comments/:id', authenticateToken, postController.removeComment);
 
 module.exports = router;

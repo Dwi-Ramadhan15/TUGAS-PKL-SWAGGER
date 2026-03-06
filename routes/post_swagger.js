@@ -8,7 +8,7 @@ const postPaths = {
                     "in": "query",
                     "required": false,
                     "schema": { "type": "integer", "default": 1 },
-                    "description": "halaman yang mau dibuka)"
+                    "description": "halaman yang mau dibuka"
                 },
                 {
                     "name": "limit",
@@ -58,7 +58,6 @@ const postPaths = {
             }
         }
     },
-    // INI ENDPOINT BARU UNTUK FITUR SLUG
     "/posts/slug/{slug}": {
         "get": {
             "tags": ["Kelola Postingan"],
@@ -131,6 +130,63 @@ const postPaths = {
             "responses": {
                 "200": { "description": "Postingan berhasil dihapus" },
                 "404": { "description": "Data tidak ditemukan" },
+                "500": { "description": "Internal Server Error" }
+            }
+        }
+    },
+    // --- ENDPOINT UNTUK FITUR KOMENTAR ---
+    "/posts/{id}/comments": {
+        "get": {
+            "tags": ["Komentar & Rating"],
+            "summary": "Mengambil semua komentar dari satu postingan",
+            "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "ID Postingan" }
+            ],
+            "responses": {
+                "200": { "description": "Berhasil mengambil komentar" },
+                "500": { "description": "Internal Server Error" }
+            }
+        },
+        "post": {
+            "tags": ["Komentar & Rating"],
+            "summary": "Menambahkan komentar dan rating (Wajib Login)",
+            "security": [{ "bearerAuth": [] }],
+            "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "ID Postingan" }
+            ],
+            "requestBody": {
+                "required": true,
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "komentar": { "type": "string", "example": "Beritanya sangat informatif!" },
+                                "rating": { "type": "integer", "minimum": 1, "maximum": 5, "example": 5 }
+                            },
+                            "required": ["komentar", "rating"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "201": { "description": "Komentar berhasil ditambahkan" },
+                "401": { "description": "Akses Ditolak (Belum Login)" },
+                "500": { "description": "Internal Server Error" }
+            }
+        }
+    },
+    "/comments/{id}": {
+        "delete": {
+            "tags": ["Komentar & Rating"],
+            "summary": "Menghapus komentar (Hanya Admin)",
+            "security": [{ "bearerAuth": [] }],
+            "parameters": [
+                { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "ID Komentar" }
+            ],
+            "responses": {
+                "200": { "description": "Komentar berhasil dihapus" },
+                "404": { "description": "Komentar tidak ditemukan" },
                 "500": { "description": "Internal Server Error" }
             }
         }
