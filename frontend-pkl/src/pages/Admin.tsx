@@ -4,8 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { LogOut, Plus, Edit, Trash2, Tags, MessageSquare } from 'lucide-react'
+import { LogOut, Plus, Edit, Trash2, Tags, MessageSquare, FileText, Table as TableIcon, Download } from 'lucide-react'
 import api from '../lib/axios'
+
+// IMPORT LIBRARY EXPORT
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -21,6 +26,8 @@ interface Post {
   gambar_url: string; 
   create_at: string;
   comment_count?: number; 
+  total_comments?: number;
+  read_comments?: number;
 }
 
 interface Category {
@@ -89,7 +96,6 @@ export default function Admin() {
   const { data: comments, isLoading: isLoadingComments } = useQuery<Comment[]>({
     queryKey: ['admin-comments', selectedPostForComment?.id],
     queryFn: async () => {
-      // PERHATIKAN INI: ADA TAMBAHAN ?source=admin
       const res = await api.get(`/posts/${selectedPostForComment?.id}/comments?source=admin`)
       return res.data.data 
     },
@@ -209,6 +215,108 @@ export default function Admin() {
     }
   }
 
+  // --- FUNGSI EXPORT DATA ---
+  const fetchAllDataForExport = async () => {
+    const res = await api.get('/posts?limit=5000');
+    return res.data.data;
+  }
+
+  const handleExportExcel = async () => {
+    try {
+      const allPosts = await fetchAllDataForExport();
+      const dataToExport = allPosts.map((post: any, index: number) => ({
+        "No": index + 1,
+        "Judul Postingan": post.judul,
+        "Kategori": post.nama_kategori,
+        "Total Komentar": post.total_comments || 0,
+        "Sudah Dibaca": post.read_comments || 0,
+        "Belum Dibaca (Baru)": post.comment_count || 0,
+        "Tanggal Dibuat": new Date(post.create_at).toLocaleDateString('id-ID')
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data Postingan");
+      XLSX.writeFile(wb, "Laporan_Postingan_DNEWS.xlsx");
+    } catch (error) {
+      alert("Gagal mengunduh Excel!");
+    }
+  }
+
+  const handleExportCSV = async () => {
+    try {
+      const allPosts = await fetchAllDataForExport();
+      const dataToExport = allPosts.map((post: any, index: number) => ({
+        "No": index + 1,
+        "Judul Postingan": post.judul,
+        "Kategori": post.nama_kategori,
+        "Total Komentar": post.total_comments || 0,
+        "Sudah Dibaca": post.read_comments || 0,
+        "Belum Dibaca (Baru)": post.comment_count || 0,
+        "Tanggal Dibuat": new Date(post.create_at).toLocaleDateString('id-ID')
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dataToExport);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", "Laporan_Postingan_DNEWS.csv");
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      alert("Gagal mengunduh CSV!");
+    }
+  }
+
+  const handleExportPDF = async () => {
+    try {
+      const allPosts = await fetchAllDataForExport();
+      const doc = new jsPDF();
+      
+      doc.setFontSize(16);
+      doc.text("Laporan Data Postingan D'NEWS", 14, 15);
+      doc.setFontSize(10);
+      doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`, 14, 22);
+      
+      // Header Tabel PDF diubah jadi lebih detail
+      const tableColumn = ["No", "Judul", "Kategori", "Total Komentar", "Terbaca", "Belum Dibaca", "Tanggal"];
+      const tableRows: any[] = [];
+
+      allPosts.forEach((post: any, index: number) => {
+        const postData = [
+          index + 1,
+          post.judul,
+          post.nama_kategori,
+          post.total_comments || 0,
+          post.read_comments || 0,
+          post.comment_count || 0, // comment_count itu isinya yang belum dibaca
+          new Date(post.create_at).toLocaleDateString('id-ID')
+        ];
+        tableRows.push(postData);
+      });
+
+      autoTable(doc, { 
+        head: [tableColumn], 
+        body: tableRows, 
+        startY: 28,
+        theme: 'grid',
+        headStyles: { fillColor: [234, 88, 12] },
+        styles: { fontSize: 8 }, // Dikecilin dikit fontnya biar muat banyak kolom
+        columnStyles: { 
+          0: { cellWidth: 10 }, 
+          3: { halign: 'center' }, 
+          4: { halign: 'center' }, 
+          5: { halign: 'center' } 
+        }
+      });
+      
+      doc.save("Laporan_Postingan_DNEWS.pdf");
+    } catch (error) {
+      alert("Gagal mengunduh PDF!");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -321,6 +429,22 @@ export default function Admin() {
           </div>
         </div>
 
+        {/* TOMBOL EXPORT BARU DITAMBAHKAN DI SINI */}
+        <div className="flex justify-between items-end mb-4 border-t pt-4 border-slate-100">
+          <h2 className="text-lg font-bold text-slate-700">Daftar Konten Berita</h2>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 shadow-sm" onClick={handleExportPDF}>
+              <FileText className="w-4 h-4 mr-2" /> Export PDF
+            </Button>
+            <Button size="sm" variant="outline" className="border-green-200 text-green-600 hover:bg-green-50 shadow-sm" onClick={handleExportExcel}>
+              <TableIcon className="w-4 h-4 mr-2" /> Export Excel
+            </Button>
+            <Button size="sm" variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 shadow-sm" onClick={handleExportCSV}>
+              <Download className="w-4 h-4 mr-2" /> Export CSV
+            </Button>
+          </div>
+        </div>
+
         <div className="border rounded-xl flex flex-col bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
@@ -358,10 +482,10 @@ export default function Admin() {
                               size="icon" 
                               title="Kelola Komentar"
                               className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
-                              onClick={() => {
-                                // PERHATIKAN INI: FUNGSI ONCLICK DIUBAH!
+                              onClick={async () => {
+                                await api.get(`/posts/${post.id}/comments?source=admin`);
+                                queryClient.invalidateQueries({ queryKey: ['posts'] });
                                 navigate(`/admin/comments/${post.id}`);
-                                setTimeout(() => queryClient.invalidateQueries({ queryKey: ['posts'] }), 500);
                               }} 
                             >
                               <MessageSquare className="w-4 h-4" />

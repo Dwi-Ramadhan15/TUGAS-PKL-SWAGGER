@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom' // Tambahkan useNavigate
+import { useNavigate } from 'react-router-dom' 
 import api from '../lib/axios'
-import { Calendar, ChevronRight, Search, LogOut, LogIn, User, Star } from 'lucide-react' // Tambahkan ikon Star
+import { Calendar, ChevronRight, Search, LogOut, LogIn, User, Star, Eye } from 'lucide-react' 
 import { Link } from 'react-router-dom'
 
 interface Post {
@@ -13,43 +13,38 @@ interface Post {
   isi: string; 
   gambar_url: string; 
   create_at: string;
-  avg_rating?: string | number; // Tambahan untuk menampung rata-rata rating
+  avg_rating?: string | number; 
+  views?: number; // Tambahan views
 }
 
 export default function Home() {
-  const navigate = useNavigate() // Inisialisasi navigate
+  const navigate = useNavigate() 
   const [searchTerm, setSearchTerm] = useState("");
 
-  // pagination limit nya
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6; 
 
-  // Cek status login
   const token = localStorage.getItem('token');
   const isLoggedIn = !!token;
 
-  // Fungsi Logout
   const handleLogout = () => {
     if (window.confirm("Apakah Anda yakin ingin keluar?")) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
       localStorage.removeItem('userId');
-      window.location.reload(); // Refresh halaman agar state bersih
+      window.location.reload(); 
     }
   };
 
-  // api sekarang udah menembak parameter pagination dan search, jadi kita tinggal pakai aja tanpa perlu filter manual lagi
   const { data: response, isLoading } = useQuery({
     queryKey: ['public-posts', currentPage, searchTerm],
     queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}&search=${searchTerm}`)).data
   })
 
-  // Reset ke halaman 1 jika user mencari berita
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // AMBIL DATA DARI BACKEND (Tanpa perlu potong-potong/filter manual lagi)
   const currentPosts = response?.data || [];
   const totalPages = response?.pagination?.totalPages || 1;
 
@@ -59,7 +54,6 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-bold text-orange-600 tracking-tight shadow-1"><a href="http://localhost:5173/">BERITA DIGITAL D'NEWS</a></h1>
           
-          {/* TOMBOL LOGIN / LOGOUT DINAMIS */}
           <div className="flex items-center gap-4">
             <div className="hidden md:block text-sm text-slate-500 font-medium">Informasi Berita Terupdate</div>
             
@@ -130,10 +124,15 @@ export default function Home() {
                   </div>
 
                   <div className="p-6 flex flex-col flex-1">
-                    <div className="flex items-center text-slate-400 text-xs mb-3 gap-3">
+                    <div className="flex items-center text-slate-400 text-xs mb-3 gap-4">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {new Date(post.create_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                      {/* IKON VIEWS DI SINI */}
+                      <span className="flex items-center gap-1 font-medium">
+                        <Eye className="w-3 h-3" />
+                        {post.views || 0}x dilihat
                       </span>
                     </div>
                     
@@ -156,13 +155,12 @@ export default function Home() {
               ))}
             </div>
 
-            {/* tombol pageination (Muncul jika halaman lebih dari 1) */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-4 mt-12">
                 <button 
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(prev => prev - 1)}
-                  className="px-6 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:border-slate-200 disabled:cursor-not-allowed transition-all shadow-sm"
+                  className="px-6 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:border-slate-200 transition-all shadow-sm"
                 >
                   Sebelumnya
                 </button>
@@ -172,7 +170,7 @@ export default function Home() {
                 <button 
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(prev => prev + 1)}
-                  className="px-6 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:border-slate-200 disabled:cursor-not-allowed transition-all shadow-sm"
+                  className="px-6 py-2.5 rounded-xl border-2 border-slate-200 text-slate-600 font-bold hover:bg-orange-50 hover:text-orange-600 hover:border-orange-200 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-slate-600 disabled:hover:border-slate-200 transition-all shadow-sm"
                 >
                   Selanjutnya
                 </button>
@@ -181,7 +179,6 @@ export default function Home() {
           </>
         )}
 
-        {/* Cek data kosong pakai currentPosts */}
         {currentPosts?.length === 0 && !isLoading && (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm mt-4">
             <p className="text-slate-500 text-lg">Maaf, pencarian untuk <span className="font-bold text-orange-600">"{searchTerm}"</span> tidak ditemukan. 📭</p>

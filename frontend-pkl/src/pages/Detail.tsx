@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Calendar, MessageSquare, Send, User, Star, Lock } from 'lucide-react'
+import { ArrowLeft, Calendar, MessageSquare, Send, User, Star, Lock, Eye } from 'lucide-react'
 import api from '../lib/axios'
 
 interface Comment {
@@ -20,7 +20,6 @@ export default function Detail() {
   const [isiKomentar, setIsiKomentar] = useState("")
   const [rating, setRating] = useState(5) 
   
-  // Untuk memunculkan pop-up peringatan login
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   const isLoggedIn = !!localStorage.getItem('token')
@@ -45,10 +44,10 @@ export default function Detail() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', post?.id] })
-      queryClient.invalidateQueries({ queryKey: ['public-posts'] }) // Biar rating avg di home ikut update
+      queryClient.invalidateQueries({ queryKey: ['public-posts'] }) 
       setIsiKomentar("")
       setRating(5)
-      alert("Terimakasih Atas Ulasan Anad!")
+      alert("Terimakasih Atas Ulasan Anda!")
     },
     onError: (error: any) => {
       alert(`Gagal mengirim komentar: ${error.response?.data?.message || "Error server"}`)
@@ -58,7 +57,6 @@ export default function Detail() {
   const handleKirimKomentar = (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Kalau belum login, munculkan Pop-Up dan hentikan proses!
     if (!isLoggedIn) {
       setShowLoginPrompt(true)
       return
@@ -82,17 +80,21 @@ export default function Detail() {
 
         <img src={post.gambar_url} alt={post.judul} className="w-full h-[400px] object-cover rounded-3xl shadow-lg mb-8" />
 
-        <div className="flex gap-3 mb-4">
+        <div className="flex gap-3 mb-4 flex-wrap">
           <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">
             {post.nama_kategori}
           </span>
-          {/* Label Rating Bintang ditambahkan di sini */}
           <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest flex items-center">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
             {comments && comments.length > 0 
                 ? (comments.reduce((acc, curr) => acc + curr.rating, 0) / comments.length).toFixed(1) 
                 : "New"
             }
+          </span>
+          {/* IKON BERAPA KALI DILIHAT DI SINI */}
+          <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest flex items-center shadow-sm">
+            <Eye className="w-3 h-3 mr-1 text-slate-500" />
+            {post.views || 0} Kali Dilihat
           </span>
           <span className="flex items-center text-slate-400 text-xs italic">
             <Calendar className="w-3 h-3 mr-1" />
@@ -112,7 +114,6 @@ export default function Detail() {
             Ruang Diskusi ({comments?.length || 0})
           </h3>
 
-          {/* KOTAK TULIS KOMENTAR SEKARANG TERBUKA BEBAS */}
           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-10 shadow-sm relative overflow-hidden">
             <h4 className="font-bold text-slate-700 mb-4">Berikan Rating & Pendapatmu 👇</h4>
             <form onSubmit={handleKirimKomentar} className="space-y-4">
@@ -153,7 +154,6 @@ export default function Detail() {
             </form>
           </div>
 
-          {/* DAFTAR KOMENTAR */}
           <div className="space-y-6">
             {isLoadingComments ? (
               <p className="text-center text-slate-400 italic">Memuat komentar...</p>
@@ -193,7 +193,6 @@ export default function Detail() {
         </div>
       </div>
 
-      {/* POP-UP MODAL PERINGATAN LOGIN */}
       {showLoginPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200 text-center">
