@@ -1,72 +1,18 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Calendar, MessageSquare, Send, User, Star, Lock, Eye } from 'lucide-react'
-import api from '../lib/axios'
-
-interface Comment {
-  id: number;
-  nama: string; 
-  komentar: string;
-  rating: number;
-  created_at: string;
-}
+// Panggil Hook "Otak" yang baru dibuat
+import { useDetail } from '../hooks/useDetail'
 
 export default function Detail() {
-  const { slug } = useParams()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-
-  const [isiKomentar, setIsiKomentar] = useState("")
-  const [rating, setRating] = useState(5) 
-  
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
-
-  const isLoggedIn = !!localStorage.getItem('token')
-
-  const { data: post, isLoading: isLoadingPost } = useQuery({
-    queryKey: ['post', slug],
-    queryFn: async () => (await api.get(`/posts/slug/${slug}`)).data
-  })
-
-  const { data: comments, isLoading: isLoadingComments } = useQuery<Comment[]>({
-    queryKey: ['comments', post?.id],
-    queryFn: async () => {
-      const res = await api.get(`/posts/${post?.id}/comments`)
-      return res.data.data 
-    },
-    enabled: !!post?.id 
-  })
-
-  const submitCommentMutation = useMutation({
-    mutationFn: async (newComment: { komentar: string, rating: number }) => {
-      return await api.post(`/posts/${post?.id}/comments`, newComment)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', post?.id] })
-      queryClient.invalidateQueries({ queryKey: ['public-posts'] }) 
-      setIsiKomentar("")
-      setRating(5)
-      alert("Terimakasih Atas Ulasan Anda!")
-    },
-    onError: (error: any) => {
-      alert(`Gagal mengirim komentar: ${error.response?.data?.message || "Error server"}`)
-    }
-  })
-
-  const handleKirimKomentar = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!isLoggedIn) {
-      setShowLoginPrompt(true)
-      return
-    }
-
-    if (!isiKomentar.trim()) {
-      return alert("Isi komentar nggak boleh kosong ya!")
-    }
-    submitCommentMutation.mutate({ komentar: isiKomentar, rating })
-  }
+  // Ekstrak semua hasil olahan dari Hook
+  const {
+    navigate,
+    post, isLoadingPost,
+    comments, isLoadingComments,
+    isiKomentar, setIsiKomentar,
+    rating, setRating,
+    showLoginPrompt, setShowLoginPrompt,
+    handleKirimKomentar, submitCommentMutation
+  } = useDetail()
 
   if (isLoadingPost) return <div className="text-center py-20 font-bold text-slate-500 animate-pulse">Memuat konten berita... ⏳</div>
 
@@ -91,7 +37,6 @@ export default function Detail() {
                 : "New"
             }
           </span>
-          {/* IKON BERAPA KALI DILIHAT DI SINI */}
           <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest flex items-center shadow-sm">
             <Eye className="w-3 h-3 mr-1 text-slate-500" />
             {post.views || 0} Kali Dilihat

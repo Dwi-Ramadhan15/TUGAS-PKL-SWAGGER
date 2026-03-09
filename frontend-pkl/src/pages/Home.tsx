@@ -1,52 +1,17 @@
-import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom' 
-import api from '../lib/axios'
 import { Calendar, ChevronRight, Search, LogOut, LogIn, User, Star, Eye } from 'lucide-react' 
 import { Link } from 'react-router-dom'
-
-interface Post {
-  id: number;
-  judul: string;
-  nama_kategori: string;
-  slug: string; 
-  isi: string; 
-  gambar_url: string; 
-  create_at: string;
-  avg_rating?: string | number; 
-  views?: number; // Tambahan views
-}
+// Panggil Hook "Otak" yang baru dibuat
+import { useHome, type Post } from '../hooks/useHome'
 
 export default function Home() {
-  const navigate = useNavigate() 
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 6; 
-
-  const token = localStorage.getItem('token');
-  const isLoggedIn = !!token;
-
-  const handleLogout = () => {
-    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role');
-      localStorage.removeItem('userId');
-      window.location.reload(); 
-    }
-  };
-
-  const { data: response, isLoading } = useQuery({
-    queryKey: ['public-posts', currentPage, searchTerm],
-    queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}&search=${searchTerm}`)).data
-  })
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  const currentPosts = response?.data || [];
-  const totalPages = response?.pagination?.totalPages || 1;
+  // Ekstrak semua hasil olahan dari Hook
+  const {
+    navigate,
+    searchTerm, setSearchTerm,
+    currentPage, setCurrentPage,
+    isLoggedIn, handleLogout,
+    isLoading, currentPosts, totalPages
+  } = useHome()
 
   return (
     <div className="min-h-screen bg-slate-50">
