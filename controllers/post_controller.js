@@ -2,6 +2,7 @@ const PostModel = require('../models/post');
 const sharp = require('sharp');
 const minioClient = require('../config/minio');
 const slugify = require('slugify');
+const axios = require('axios');
 
 const getAll = async(req, res) => {
     try {
@@ -122,12 +123,11 @@ const remove = async(req, res) => {
     }
 };
 
-// tanggal 6 maret 2026 suruh tambahin fitur komentar
 const getPostComments = async(req, res) => {
     try {
         const { id } = req.params;
 
-        // LOGIKA BARU: Hanya jadikan "Sudah Dibaca" kalau yang buka adalah ADMIN
+        // Hanya jadikan "Sudah Dibaca" kalau yang buka adalah ADMIN
         if (req.query.source === 'admin') {
             await PostModel.markCommentsAsRead(id);
         }
@@ -139,15 +139,54 @@ const getPostComments = async(req, res) => {
     }
 };
 
+// CREATE COMMENT + NOTIFIKASI WA OTOMATIS
+
 const createPostComment = async(req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params; // ID Postingan
         const { komentar, rating } = req.body;
         const userId = req.user.userId;
+
         if (!komentar || !rating) {
             return res.status(400).json({ message: "Komentar dan Rating wajib diisi dong!" });
         }
+
+        // Simpan komentar ke Database
         const result = await PostModel.addComment(id, userId, komentar, rating);
+
+        // Ambil Judul Berita untuk info di WA
+        let postTitle = "Berita D'NEWS";
+        try {
+            const postData = await PostModel.getPostById(id);
+            if (postData.rows.length > 0) {
+                postTitle = postData.rows[0].judul;
+            }
+        } catch (e) {
+            console.log("Gagal ambil judul untuk notif WA, pakai default.");
+        }
+
+        // Format Pesan WhatsApp
+        const waMessage = `*Notifikasi D'NEWS* 🔔\n\nAda ulasan baru masuk!\n\n*Berita:* ${postTitle}\n*Rating:* ⭐ ${rating}/5\n*Isi Komentar:* "${komentar}"\n\nSilakan cek Dashboard Admin untuk membalas/mengelola.`;
+
+        // Kirim ke API Fonnte (Berjalan di background agar respon ke React tidak lelet)
+        const waToken = process.env.FONNTE_TOKEN;
+        const targetNumber = process.env.ADMIN_WA_NUMBER;
+
+        if (waToken && targetNumber) {
+            axios.post('https://api.fonnte.com/send', {
+                target: targetNumber,
+                message: waMessage,
+            }, {
+                headers: { Authorization: waToken }
+            }).then(response => {
+                console.log("✅ Sukses kirim Notif WA ke Admin!");
+            }).catch(error => {
+                console.error("❌ Gagal kirim Notif WA:", error.response ? error.response.data : error.message);
+            });
+        } else {
+            console.log("⚠️ Notif WA dilewati (FONNTE_TOKEN atau ADMIN_WA_NUMBER belum diset di .env)");
+        }
+
         res.status(201).json({ status: "success", message: "Komentar berhasil ditambahkan", data: result.rows[0] });
     } catch (err) {
         res.status(500).json({ message: `Database Error: ${err.message}` });
