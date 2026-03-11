@@ -10,7 +10,7 @@ import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-// --- CETAKAN DATA ---
+// CETAKAN DATA
 export interface Post {
   id: number;
   judul: string;
@@ -38,6 +38,15 @@ export interface User {
   is_blocked?: boolean; 
 }
 
+// Tambahan Cetakan Notifikasi
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 const postSchema = z.object({
   judul: z.string().min(1, "Judul wajib diisi!"),
   nama_kategori: z.string().min(1, "Pilih kategorinya dong!"),
@@ -49,7 +58,16 @@ export function useAdmin() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   
-  const [activeTab, setActiveTab] = useState<'posts' | 'users'>('posts')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'posts' | 'users'>('posts')
+
+  // State untuk Notifikasi & Filter Grafik
+  const [showNotif, setShowNotif] = useState(false)
+  const [chartFilter, setChartFilter] = useState('semua')
+  const [sortOrder, setSortOrder] = useState<'terbanyak' | 'tersedikit'>('terbanyak')
+
+  // STATE BARU UNTUK FITUR PENCARIAN
+  const [searchPost, setSearchPost] = useState("")
+  const [searchUser, setSearchUser] = useState("")
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -72,10 +90,15 @@ export function useAdmin() {
     if (!token) navigate('/login') 
   }, [navigate])
 
-  // GET DATA
+  // Reset halaman ke 1 kalau lagi nyari berita biar nggak nyangkut di halaman kosong
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchPost])
+
+  // GET DATA (Ditambah parameter search untuk postingan)
   const { data: postsResponse, isLoading: isLoadingPosts } = useQuery({
-    queryKey: ['posts', currentPage],
-    queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}`)).data,
+    queryKey: ['posts', currentPage, searchPost],
+    queryFn: async () => (await api.get(`/posts?page=${currentPage}&limit=${postsPerPage}&search=${searchPost}`)).data,
     refetchInterval: 3000, 
     refetchOnWindowFocus: true 
   })
@@ -91,6 +114,30 @@ export function useAdmin() {
       const res = await api.get('/users');
       return res.data.data;
     }
+  })
+
+  // Filter Data Pengguna secara langsung di frontend
+  const filteredUsers = usersData?.filter(user => 
+    (user.nama?.toLowerCase() || '').includes(searchUser.toLowerCase()) || 
+    (user.email?.toLowerCase() || '').includes(searchUser.toLowerCase())
+  ) || []
+
+  // Get Data Grafik (Analytics) - UNTUK TAMPILAN GRAFIK DI LAYAR
+  const { data: analyticsData } = useQuery({
+    queryKey: ['analytics', chartFilter, sortOrder],
+    queryFn: async () => (await api.get(`/analytics?filter=${chartFilter}&sort=${sortOrder}`)).data.data
+  })
+
+  // Get Data Notifikasi
+  const { data: notifications } = useQuery<Notification[]>({
+    queryKey: ['notifications'],
+    queryFn: async () => (await api.get('/notifications')).data.data,
+    refetchInterval: 10000 
+  })
+
+  const markNotifReadMutation = useMutation({
+    mutationFn: async () => await api.patch('/notifications/read'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
   })
 
   const currentPosts = postsResponse?.data || []
@@ -210,7 +257,42 @@ export function useAdmin() {
     autoTable(doc, { head: [tableColumn], body: tableRows, startY: 28, theme: 'grid', headStyles: { fillColor: [234, 88, 12] } }); doc.save("Daftar_Pengguna_DNEWS.pdf");
   }
 
-  // FITUR BARU: HAPUS & BLOKIR PENGGUNA
+  // TARIK SEMUA DATA STATISTIK KHUSUS UNTUK EXPORT 
+  const fetchAllAnalyticsForExport = async () => {
+    const res = await api.get(`/analytics?filter=${chartFilter}&sort=${sortOrder}&limit=all`);
+    return res.data.data;
+  }
+
+  const handleExportAnalyticsExcel = async () => {
+    try {
+      const allData = await fetchAllAnalyticsForExport();
+      if (!allData || allData.length === 0) return alert("Tidak ada data statistik untuk diexport!");
+      const dataToExport = allData.map((item: any, index: number) => ({ "No": index + 1, "Judul Berita": item.name, "Total Kunjungan": item.views }));
+      const ws = XLSX.utils.json_to_sheet(dataToExport); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Statistik"); XLSX.writeFile(wb, `Statistik_DNEWS_${chartFilter}.xlsx`);
+    } catch (error) { alert("Gagal mengunduh Excel!"); }
+  }
+
+  const handleExportAnalyticsCSV = async () => {
+    try {
+      const allData = await fetchAllAnalyticsForExport();
+      if (!allData || allData.length === 0) return alert("Tidak ada data statistik untuk diexport!");
+      const dataToExport = allData.map((item: any, index: number) => ({ "No": index + 1, "Judul Berita": item.name, "Total Kunjungan": item.views }));
+      const ws = XLSX.utils.json_to_sheet(dataToExport); const csv = XLSX.utils.sheet_to_csv(ws); const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", `Statistik_DNEWS_${chartFilter}.csv`); link.click();
+    } catch (error) { alert("Gagal mengunduh CSV!"); }
+  }
+
+  const handleExportAnalyticsPDF = async () => {
+    try {
+      const allData = await fetchAllAnalyticsForExport();
+      if (!allData || allData.length === 0) return alert("Tidak ada data statistik untuk diexport!");
+      const doc = new jsPDF(); doc.setFontSize(16); doc.text(`Laporan Statistik D'NEWS (Filter: ${chartFilter})`, 14, 15); doc.setFontSize(10); doc.text(`Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`, 14, 22);
+      const tableColumn = ["No", "Judul Berita", "Total Kunjungan"]; const tableRows: any[] = [];
+      allData.forEach((item: any, index: number) => { tableRows.push([index + 1, item.name, item.views]); });
+      autoTable(doc, { head: [tableColumn], body: tableRows, startY: 28, theme: 'grid', headStyles: { fillColor: [234, 88, 12] } }); doc.save(`Statistik_DNEWS_${chartFilter}.pdf`);
+    } catch (error) { alert("Gagal mengunduh PDF!"); }
+  }
+
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => await api.delete(`/users/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); alert("Pengguna berhasil dihapus permanen! 🗑️") },
@@ -246,11 +328,14 @@ export function useAdmin() {
     currentPosts, totalPages, indexOfFirstPost,
     categories, isLoadingPosts,
     usersData, isLoadingUsers, 
+    showNotif, setShowNotif, chartFilter, setChartFilter, sortOrder, setSortOrder, analyticsData, notifications, markNotifReadMutation,
+    searchPost, setSearchPost, searchUser, setSearchUser, filteredUsers, // State Pencarian Diexport
     register, handleSubmit, errors, isSubmitting, reset, setValue,
     onSubmitPost, handleDeletePost, handleCategorySubmit,
     handleExportExcel, handleExportCSV, handleExportPDF,
     handleExportUsersExcel, handleExportUsersCSV, handleExportUsersPDF,
-    handleDeleteUser, handleToggleBlock, 
+    handleExportAnalyticsExcel, handleExportAnalyticsCSV, handleExportAnalyticsPDF, 
+    handleDeleteUser, handleToggleBlock,
     categoryCreateMutation, categoryDeleteMutation, updateMutation
   }
 }

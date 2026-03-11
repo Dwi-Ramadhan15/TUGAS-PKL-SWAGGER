@@ -3,6 +3,7 @@ const sharp = require('sharp');
 const minioClient = require('../config/minio');
 const slugify = require('slugify');
 const axios = require('axios');
+const pool = require('../config/db');
 
 const getAll = async(req, res) => {
     try {
@@ -54,7 +55,16 @@ const getBySlug = async(req, res) => {
         const { slug } = req.params;
         const result = await PostModel.getPostBySlug(slug);
         if (result.rows.length === 0) return res.status(404).json({ message: 'Berita tidak ditemukan' });
+
         const post = result.rows[0];
+
+        // REKAM JEJAK KUNJUNGAN UNTUK GRAFIK DASHBOARD
+        try {
+            await pool.query('INSERT INTO post_views (post_id) VALUES ($1)', [post.id]);
+        } catch (e) {
+            console.log("Gagal merekam history grafik:", e.message);
+        }
+
         post.gambar_url = post.gambar ? `${process.env.MINIO_DOMAIN}/${post.gambar}` : null;
         res.json(post);
     } catch (err) {
@@ -163,6 +173,15 @@ const createPostComment = async(req, res) => {
             }
         } catch (e) {
             console.log("Gagal ambil judul untuk notif WA, pakai default.");
+        }
+
+        // SIMPAN NOTIFIKASI KE DATABASE UNTUK LONCENG ADMIN
+        try {
+            await pool.query(
+                'INSERT INTO notifications (title, message) VALUES ($1, $2)', ['Komentar Baru', `Ada ulasan bintang ${rating} di berita: ${postTitle}`]
+            );
+        } catch (e) {
+            console.log("Gagal menyimpan notifikasi lonceng:", e.message);
         }
 
         // Format Pesan WhatsApp

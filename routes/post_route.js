@@ -4,6 +4,7 @@ const multer = require('multer');
 const postController = require('../controllers/post_controller');
 const authenticateToken = require('../middlewares/auth');
 const verifyToken = require('../middlewares/auth');
+const dashboardController = require('../controllers/dashboard_controller');
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -47,6 +48,9 @@ router.delete('/posts/:id', authenticateToken, postController.remove);
 // untuk Komentar
 router.get('/posts/:id/comments', postController.getPostComments);
 router.post('/posts/:id/comments', verifyToken, postController.createPostComment);
+router.get('/analytics', dashboardController.getAnalytics);
+router.get('/notifications', dashboardController.getNotifications);
+router.patch('/notifications/read', dashboardController.markReadNotifications);
 //admmin bisa hapus komentar netizen 
 router.delete('/comments/:id', authenticateToken, postController.removeComment);
 

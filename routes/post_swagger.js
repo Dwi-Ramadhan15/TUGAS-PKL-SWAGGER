@@ -190,6 +190,59 @@ const postPaths = {
                 "500": { "description": "Internal Server Error" }
             }
         }
+    }, // <--- KOMA INI YANG BIKIN ERROR TADI KALAU KETINGGALAN
+    // --- ENDPOINT UNTUK DASHBOARD & NOTIFIKASI ---
+    "/analytics": {
+        "get": {
+            "tags": ["Dashboard & Statistik"],
+            "summary": "Mengambil data grafik kunjungan berita",
+            "parameters": [{
+                    "name": "filter",
+                    "in": "query",
+                    "required": false,
+                    "schema": { "type": "string", "enum": ["semua", "hari", "minggu", "bulan"], "default": "semua" },
+                    "description": "Filter waktu grafik"
+                },
+                {
+                    "name": "sort",
+                    "in": "query",
+                    "required": false,
+                    "schema": { "type": "string", "enum": ["terbanyak", "tersedikit"], "default": "terbanyak" },
+                    "description": "Urutan jumlah views"
+                },
+                {
+                    "name": "limit",
+                    "in": "query",
+                    "required": false,
+                    "schema": { "type": "string" },
+                    "description": "Isi dengan 'all' untuk mengambil semua data (untuk keperluan Export PDF/Excel)"
+                }
+            ],
+            "responses": {
+                "200": { "description": "Berhasil mengambil data statistik" },
+                "500": { "description": "Internal Server Error" }
+            }
+        }
+    },
+    "/notifications": {
+        "get": {
+            "tags": ["Dashboard & Statistik"],
+            "summary": "Mengambil daftar notifikasi lonceng admin",
+            "responses": {
+                "200": { "description": "Berhasil mengambil data notifikasi" },
+                "500": { "description": "Internal Server Error" }
+            }
+        }
+    },
+    "/notifications/read": {
+        "patch": {
+            "tags": ["Dashboard & Statistik"],
+            "summary": "Menandai semua notifikasi menjadi status 'sudah dibaca'",
+            "responses": {
+                "200": { "description": "Semua notifikasi berhasil ditandai" },
+                "500": { "description": "Internal Server Error" }
+            }
+        }
     }
 };
 
