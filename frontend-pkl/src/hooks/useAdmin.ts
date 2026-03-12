@@ -22,6 +22,7 @@ export interface Post {
   comment_count?: number; 
   total_comments?: number;
   read_comments?: number;
+  post_id?: number;
 }
 
 export interface Category {

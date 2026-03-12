@@ -22,7 +22,7 @@ export default function Admin() {
     categories,
     usersData, isLoadingUsers,
     showNotif, setShowNotif, chartFilter, setChartFilter, sortOrder, setSortOrder, analyticsData, notifications, markNotifReadMutation,
-    searchPost, setSearchPost, searchUser, setSearchUser, filteredUsers, // Import State Pencarian
+    searchPost, setSearchPost, searchUser, setSearchUser, filteredUsers, 
     register, handleSubmit, errors, isSubmitting, reset, setValue,
     onSubmitPost, handleDeletePost, handleCategorySubmit,
     handleExportExcel, handleExportCSV, handleExportPDF,
@@ -119,7 +119,15 @@ export default function Admin() {
                     <div className="p-6 text-center text-sm text-slate-500">Belum ada notifikasi</div>
                   ) : (
                     notifications?.map(notif => (
-                      <div key={notif.id} className={`p-4 border-b hover:bg-slate-50 transition flex gap-3 ${notif.is_read ? 'opacity-60' : 'bg-blue-50/30'}`}>
+                      <div key={notif.id} 
+                            onClick={() => {
+                              if (notif.post_id) {
+                                navigate(`/admin/comments/${notif.post_id}`);
+                                setShowNotif(false); // Tutup dropdown setelah diklik
+                              }
+                            }}
+                            className={`p-4 border-b hover:bg-slate-50 cursor-pointer transition flex gap-3 ${notif.is_read ? 'opacity-60' : 'bg-blue-50/30'}`}
+>
                          <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${notif.is_read ? 'bg-slate-200 text-slate-500' : 'bg-blue-100 text-blue-600'}`}>
                            {notif.is_read ? <CheckCircle className="w-4 h-4"/> : <Bell className="w-4 h-4"/>}
                          </div>

@@ -178,7 +178,7 @@ const createPostComment = async(req, res) => {
         // SIMPAN NOTIFIKASI KE DATABASE UNTUK LONCENG ADMIN
         try {
             await pool.query(
-                'INSERT INTO notifications (title, message) VALUES ($1, $2)', ['Komentar Baru', `Ada ulasan bintang ${rating} di berita: ${postTitle}`]
+                'INSERT INTO notifications (title, message, post_id) VALUES ($1, $2, $3)', ['Komentar Baru', `Ada ulasan bintang ${rating} di berita: ${postTitle}`, id]
             );
         } catch (e) {
             console.log("Gagal menyimpan notifikasi lonceng:", e.message);
