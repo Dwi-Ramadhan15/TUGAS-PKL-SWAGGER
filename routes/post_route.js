@@ -48,6 +48,7 @@ router.delete('/posts/:id', authenticateToken, postController.remove);
 // untuk Komentar
 router.get('/posts/:id/comments', postController.getPostComments);
 router.post('/posts/:id/comments', verifyToken, postController.createPostComment);
+router.get('/all-comments', authenticateToken, postController.getAllCommentsAdmin);
 router.get('/analytics', dashboardController.getAnalytics);
 router.get('/notifications', dashboardController.getNotifications);
 router.patch('/notifications/read', dashboardController.markReadNotifications);

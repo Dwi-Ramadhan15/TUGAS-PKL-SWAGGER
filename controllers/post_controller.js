@@ -8,7 +8,7 @@ const pool = require('../config/db');
 const getAll = async(req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 7;
+        const limit = parseInt(req.query.limit) || 23;
         const search = req.query.search || '';
         const offset = (page - 1) * limit;
 
@@ -223,4 +223,20 @@ const removeComment = async(req, res) => {
     }
 };
 
-module.exports = { getAll, getById, getBySlug, create, update, remove, getPostComments, createPostComment, removeComment };
+const getAllCommentsAdmin = async(req, res) => {
+    try {
+        const query = `
+            SELECT comments.*, users.nama AS nama_user, posts.judul AS judul_post 
+            FROM comments 
+            JOIN users ON comments.user_id = users.id 
+            JOIN posts ON comments.post_id = posts.id 
+            ORDER BY comments.created_at DESC
+        `;
+        const result = await pool.query(query);
+        res.json({ data: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+module.exports = { getAll, getById, getBySlug, create, update, remove, getPostComments, createPostComment, removeComment, getAllCommentsAdmin };

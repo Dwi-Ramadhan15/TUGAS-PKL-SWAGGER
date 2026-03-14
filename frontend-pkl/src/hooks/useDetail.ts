@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../lib/axios'
 
-// Cetakan data komentar kita ekspor agar bisa dibaca oleh halaman UI
 export interface Comment {
   id: number;
   nama: string; 
@@ -17,20 +16,17 @@ export function useDetail() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
-  // State untuk form komentar dan pop-up
   const [isiKomentar, setIsiKomentar] = useState("")
   const [rating, setRating] = useState(5) 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   const isLoggedIn = !!localStorage.getItem('token')
 
-  // Fetching data artikel
   const { data: post, isLoading: isLoadingPost } = useQuery({
     queryKey: ['post', slug],
     queryFn: async () => (await api.get(`/posts/slug/${slug}`)).data
   })
 
-  // Fetching data komentar
   const { data: comments, isLoading: isLoadingComments } = useQuery<Comment[]>({
     queryKey: ['comments', post?.id],
     queryFn: async () => {
@@ -40,7 +36,21 @@ export function useDetail() {
     enabled: !!post?.id 
   })
 
-  // Mutasi untuk mengirim komentar
+  // AMBIL DATA TERPOPULER BERDASARKAN VIEWS (DARI TERBESAR KE TERKECIL)
+  const { data: popularPosts } = useQuery({
+    queryKey: ['popular-posts'],
+    queryFn: async () => {
+      const res = await api.get('/posts?limit=100')
+      const allPosts = res.data.data || []
+      
+      return allPosts.sort((a: any, b: any) => {
+        const viewsA = Number(a.views) || 0;
+        const viewsB = Number(b.views) || 0;
+        return viewsB - viewsA; // Urutkan descending (terbanyak di atas)
+      }).slice(0, 5) // Ambil 5 teratas
+    }
+  })
+
   const submitCommentMutation = useMutation({
     mutationFn: async (newComment: { komentar: string, rating: number }) => {
       return await api.post(`/posts/${post?.id}/comments`, newComment)
@@ -57,7 +67,6 @@ export function useDetail() {
     }
   })
 
-  // Fungsi ketika tombol kirim diklik
   const handleKirimKomentar = (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -72,11 +81,11 @@ export function useDetail() {
     submitCommentMutation.mutate({ komentar: isiKomentar, rating })
   }
 
-  // Mengembalikan (melempar) semua data dan fungsi ke komponen tampilan
   return {
     navigate,
     post, isLoadingPost,
     comments, isLoadingComments,
+    popularPosts,
     isiKomentar, setIsiKomentar,
     rating, setRating,
     showLoginPrompt, setShowLoginPrompt,
